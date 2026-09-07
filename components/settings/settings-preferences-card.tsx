@@ -33,12 +33,12 @@ export function SettingsPreferencesCard({
   return (
     <Card className="space-y-5 p-5">
       <div className="flex items-center gap-2 text-lg font-semibold">
-        <Bell className="size-4 text-primary" />
+        <Bell className="size-4 text-muted-foreground" />
         Preferences
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-start justify-between gap-4 rounded-md border border-primary/20 p-3">
+        <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
           <div>
             <div className="font-medium">Invoice Reminder Emails</div>
             <div className="text-sm text-muted-foreground">
@@ -51,7 +51,7 @@ export function SettingsPreferencesCard({
           />
         </div>
 
-        <div className="flex items-start justify-between gap-4 rounded-md border border-primary/20 p-3">
+        <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
           <div>
             <div className="font-medium">Weekly Summary</div>
             <div className="text-sm text-muted-foreground">
@@ -61,7 +61,7 @@ export function SettingsPreferencesCard({
           <Switch checked={weeklySummary} onCheckedChange={setWeeklySummary} />
         </div>
 
-        <div className="flex items-start justify-between gap-4 rounded-md border border-primary/20 p-3">
+        <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
           <div>
             <div className="font-medium">Product Updates</div>
             <div className="text-sm text-muted-foreground">

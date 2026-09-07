@@ -717,7 +717,7 @@ export function JobsCalendarPageClient({
     <div className="space-y-5">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-primary">Calendar</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Calendar</h1>
           <p className="text-sm text-muted-foreground">
             Browse scheduled jobs month by month across your entire company history.
           </p>

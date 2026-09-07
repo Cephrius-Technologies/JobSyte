@@ -32,14 +32,14 @@ export function SettingsSecurityCard({
   return (
     <Card className="space-y-5 p-5">
       <div className="flex items-center gap-2 text-lg font-semibold">
-        <Shield className="size-4 text-primary" />
+        <Shield className="size-4 text-muted-foreground" />
         Security
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-3 rounded-md border border-primary/20 p-4">
+        <div className="space-y-3 rounded-md border border-border p-4">
           <div className="flex items-center gap-2 font-semibold">
-            <Mail className="size-4 text-primary" />
+            <Mail className="size-4 text-muted-foreground" />
             Change Email
           </div>
           <div className="space-y-2">
@@ -61,9 +61,9 @@ export function SettingsSecurityCard({
           </Button>
         </div>
 
-        <div className="space-y-3 rounded-md border border-primary/20 p-4">
+        <div className="space-y-3 rounded-md border border-border p-4">
           <div className="flex items-center gap-2 font-semibold">
-            <KeyRound className="size-4 text-primary" />
+            <KeyRound className="size-4 text-muted-foreground" />
             Change Password
           </div>
           <div className="space-y-2">

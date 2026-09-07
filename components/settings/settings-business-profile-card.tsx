@@ -29,7 +29,7 @@ export function SettingsBusinessProfileCard({
   return (
     <Card className="space-y-4 p-5">
       <div className="flex items-center gap-2 text-lg font-semibold">
-        <Building2 className="size-4 text-primary" />
+        <Building2 className="size-4 text-muted-foreground" />
         Business Profile
       </div>
 

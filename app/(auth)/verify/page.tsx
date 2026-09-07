@@ -89,10 +89,11 @@ function VerifyPageContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md p-6">
-        <div className="space-y-1 mb-6">
-          <div className="text-lg font-semibold">Verify your email</div>
+    <div className="min-h-dvh flex items-center justify-center bg-background px-4 py-10">
+      <Card className="w-full max-w-md gap-6 p-6 sm:p-8">
+        <div className="text-sm font-semibold tracking-tight text-primary">JobSyte<span className="ml-2 font-normal text-muted-foreground">/ Contractor workspace</span></div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight">Verify your email</h1>
           <div className="text-sm text-muted-foreground">
             Enter the 6-digit code sent to{" "}
             <span className="font-medium text-foreground">{email}</span>
@@ -101,9 +102,8 @@ function VerifyPageContent() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Verification code</Label>
-            <Input
-              value={code}
+            <Label htmlFor="verify-code">Verification code</Label>
+            <Input id="verify-code" value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="123456"
               inputMode="numeric"
@@ -142,8 +142,8 @@ export default function VerifyPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-          <Card className="w-full max-w-md p-6">
+        <div className="min-h-dvh flex items-center justify-center bg-background px-4 py-10">
+          <Card className="w-full max-w-md gap-6 p-6 sm:p-8">
             <div className="text-sm text-muted-foreground">Loading...</div>
           </Card>
         </div>

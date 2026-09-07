@@ -46,15 +46,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md p-6">
+    <div className="min-h-dvh flex items-center justify-center bg-background px-4 py-10">
+      <Card className="w-full max-w-md gap-6 p-6 sm:p-8">
+        <div className="text-sm font-semibold tracking-tight text-primary">JobSyte<span className="ml-2 font-normal text-muted-foreground">/ Contractor workspace</span></div>
         {showVerified && (
-          <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+          <div className="mb-4 rounded-md border border-transparent bg-success-muted px-3 py-2 text-sm text-success">
             Account verified. Please sign in.
           </div>
         )}
-        <div className="space-y-1 mb-6">
-          <div className="text-lg font-semibold">Sign in</div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
           <div className="text-sm text-muted-foreground">
             Access your contractor dashboard
           </div>
@@ -62,18 +63,16 @@ export default function LoginPage() {
 
         <div className="space-y-4 ">
           <div className="space-y-2">
-            <Label>Email</Label>
-            <Input
-              value={email}
+            <Label htmlFor="login-email">Email</Label>
+            <Input id="login-email" type="email" autoComplete="email" value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@email.com"
             />
           </div>
 
           <div className="space-y-2 ">
-            <Label className="grid-row-2">Password</Label>
-            <Input
-              type="password"
+            <Label htmlFor="login-password">Password</Label>
+            <Input id="login-password" autoComplete="current-password" type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="•••••••••••••"

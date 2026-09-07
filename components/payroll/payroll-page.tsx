@@ -372,7 +372,7 @@ export function PayrollPageClient({
     <div className="space-y-6">
       <HighlightScroller />
       <div>
-        <h1 className="text-2xl font-semibold text-primary">Payroll</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Payroll</h1>
         <p className="text-sm text-muted-foreground">
           Record payments for completed jobs assigned to employees and crews.
         </p>

@@ -54,10 +54,11 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md p-6">
-        <div className="space-y-1 mb-6">
-          <div className="text-lg font-semibold">Create your account</div>
+    <div className="min-h-dvh flex items-center justify-center bg-background px-4 py-10">
+      <Card className="w-full max-w-md gap-6 p-6 sm:p-8">
+        <div className="text-sm font-semibold tracking-tight text-primary">JobSyte<span className="ml-2 font-normal text-muted-foreground">/ Contractor workspace</span></div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
           <div className="text-sm text-muted-foreground">
             We’ll email you a verification link.
           </div>
@@ -65,27 +66,24 @@ export default function SignupPage() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Company Name</Label>
-            <Input
-              value={companyName}
+            <Label htmlFor="signup-companyName">Company Name</Label>
+            <Input id="signup-companyName" value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="Cephrius LLC"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Email</Label>
-            <Input
-              value={email}
+            <Label htmlFor="signup-email">Email</Label>
+            <Input id="signup-email" type="email" autoComplete="email" value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@email.com"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Password</Label>
-            <Input
-              type="password"
+            <Label htmlFor="signup-password">Password</Label>
+            <Input id="signup-password" autoComplete="new-password" type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="•••••••••••••"
@@ -93,9 +91,8 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Confirm Password</Label>
-            <Input
-              type="password"
+            <Label htmlFor="signup-confirm">Confirm Password</Label>
+            <Input id="signup-confirm" type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="•••••••••••••"

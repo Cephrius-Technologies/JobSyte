@@ -306,7 +306,7 @@ export function EmployeesPageClient({
       {/* Header with actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-primary">Employees &amp; Crews</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Employees &amp; Crews</h1>
           <p className="text-sm text-muted-foreground">
             Manage your workforce — add employees and crews to assign jobs and track payroll.
           </p>

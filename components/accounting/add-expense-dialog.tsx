@@ -93,7 +93,7 @@ export function AddExpenseDialog({
           <DialogTitle>Add Expense</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-6">
           {/* Name */}
           <div className="space-y-1.5">
             <Label htmlFor="exp-name">Expense Name *</Label>
@@ -192,7 +192,7 @@ export function AddExpenseDialog({
             />
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isPending}>

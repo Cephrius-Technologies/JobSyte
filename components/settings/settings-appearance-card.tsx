@@ -6,7 +6,7 @@ export function SettingsAppearanceCard() {
   return (
     <Card className="space-y-4 p-5">
       <div className="flex items-center gap-2 text-lg font-semibold">
-        <Palette className="size-4 text-primary" />
+        <Palette className="size-4 text-muted-foreground" />
         Appearance
       </div>
 
