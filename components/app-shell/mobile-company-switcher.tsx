@@ -127,7 +127,7 @@ export function MobileCompanySwitcher() {
       <button
         type="button"
         onClick={() => setDrawerOpen(true)}
-        className="flex size-9 items-center justify-center rounded-lg border border-primary/30 bg-primary text-primary-foreground text-xs font-bold shrink-0 hover:bg-primary/90 transition-colors"
+        className="flex size-9 items-center justify-center rounded-lg border border-border bg-primary text-primary-foreground text-xs font-bold shrink-0 hover:bg-primary/90 transition-colors"
         aria-label={`Switch company — ${activeCompany.name}`}
       >
         {companyInitials(activeCompany.name)}

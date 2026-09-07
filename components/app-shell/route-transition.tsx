@@ -16,7 +16,7 @@ export function RouteTransition({
     <div
       key={pathname}
       className={cn(
-        "flex min-h-0 flex-1 flex-col animate-in fade-in-0 slide-in-from-bottom-1 duration-300 motion-reduce:animate-none",
+        "mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col",
         className,
       )}
     >

@@ -13,13 +13,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <BreadcrumbProvider>
       <SidebarStateProvider>
-        <div className="min-h-screen bg-muted/30">
-          <div className="flex gap-2 p-2 sm:gap-3 sm:p-3">
+        <div className="min-h-screen bg-background">
+          <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-card focus:p-3 focus:ring-2 focus:ring-ring">Skip to content</a>
+          <div className="flex">
             <Sidebar />
-            <div className="min-w-0 flex-1 flex flex-col md:h-[calc(100vh-1.5rem)]">
+            <div className="min-w-0 flex-1 flex flex-col md:h-dvh">
               <Header />
               <MainView>
-                <main data-app-shell-main className="flex min-h-0 h-full flex-1 flex-col overflow-y-auto p-3 sm:p-6 md:pb-4">
+                <main id="main-content" data-app-shell-main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-6 lg:p-8">
                   <RouteTransition>{children}</RouteTransition>
                 </main>
               </MainView>

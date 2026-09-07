@@ -298,9 +298,9 @@ export function Header() {
   return (
     <header
       data-app-shell-header
-      className="rounded-xl border border-primary/20 bg-mainview/40 px-3 py-2 sm:px-4 sm:py-3"
+      className="shrink-0 border-b border-border bg-card px-4 py-3 sm:px-6"
     >
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 md:grid-cols-[minmax(0,1fr)_minmax(10rem,24rem)_auto]">
         <div className="hidden min-w-0 items-center gap-2 md:flex">
           {/* Dashboard Collapse Component */}
           <Button
@@ -318,7 +318,7 @@ export function Header() {
             )}
           </Button>
 
-          <div className="hidden min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 overflow-hidden text-sm text-muted-foreground lg:flex">
+          <nav aria-label="Breadcrumb" className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-sm text-muted-foreground">
             {crumbs.map((c, idx) => {
               const isLast = idx === crumbs.length - 1;
               return (
@@ -335,10 +335,11 @@ export function Header() {
                     </Link>
                   ) : (
                     <span
+                      aria-current={isLast ? "page" : undefined}
                       className={cn(
                         "max-w-[12rem] truncate",
                         isLast
-                          ? "font-medium text-primary"
+                          ? "font-medium text-foreground"
                           : "text-muted-foreground",
                       )}
                       title={c.label}
@@ -346,11 +347,11 @@ export function Header() {
                       {c.label}
                     </span>
                   )}
-                  {!isLast && <span>&gt;</span>}
+                  {!isLast && <span aria-hidden="true">/</span>}
                 </div>
               );
             })}
-          </div>
+          </nav>
         </div>
 
         <div className="col-start-1 row-start-1 flex w-full min-w-0 items-center gap-2 md:col-start-2 md:justify-self-center md:max-w-[30rem] lg:max-w-[34rem] xl:max-w-[40rem]">
@@ -377,13 +378,13 @@ export function Header() {
               onFocus={() => setIsSearchFocused(true)}
               onKeyDown={handleInputKeyDown}
               placeholder="Search projects, jobs, invoices, employees and more..."
-              className="h-9 text-xs placeholder:text-xs sm:text-sm sm:placeholder:text-sm border-primary/20 focus-visible:ring-primary/30"
+              className="h-9 text-xs placeholder:text-xs sm:text-sm sm:placeholder:text-sm border-border focus-visible:ring-primary/30"
               aria-label="Global search"
               autoComplete="off"
             />
 
             {showSuggestions && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-md border border-primary/20 bg-background shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-150">
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-md border border-border bg-background shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-150">
                 <div
                   key={suggestionsTransitionKey}
                   className="animate-in fade-in-0 slide-in-from-top-1 duration-200"
@@ -406,7 +407,7 @@ export function Header() {
                             "flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition-colors",
                             activeSuggestionIndex === index
                               ? "bg-primary/10"
-                              : "hover:bg-primary/5",
+                              : "hover:bg-muted/50",
                           )}
                           onClick={() => selectSuggestion(suggestion)}
                         >
@@ -446,7 +447,7 @@ export function Header() {
                               )}
                             </div>
                           </div>
-                          <div className="rounded border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                          <div className="rounded border border-border bg-primary/5 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
                             {suggestionTypeLabel(suggestion.type)}
                           </div>
                         </button>
@@ -459,10 +460,10 @@ export function Header() {
                   <button
                     type="button"
                     className={cn(
-                      "flex w-full items-start justify-between gap-3 border-t border-primary/10 px-3 py-2 text-left text-sm transition-colors",
+                      "flex w-full items-start justify-between gap-3 border-t border-border px-3 py-2 text-left text-sm transition-colors",
                       activeSuggestionIndex === suggestions.length
                         ? "bg-primary/10"
-                        : "hover:bg-primary/5",
+                        : "hover:bg-muted/50",
                     )}
                     onClick={() => openNewProjectFromQuery(query)}
                   >
@@ -477,7 +478,7 @@ export function Header() {
                         </div>
                       </div>
                     </div>
-                    <div className="rounded border border-primary/20  bg-primary/5 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                    <div className="rounded border border-border  bg-primary/5 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
                       Action
                     </div>
                   </button>
@@ -489,7 +490,7 @@ export function Header() {
             type="submit"
             variant="outline"
             size="icon"
-            className="h-9 w-9 shrink-0 cursor-pointer border-primary/30 hover:bg-primary/10"
+            className="h-9 w-9 shrink-0 cursor-pointer border-border hover:bg-muted"
             aria-label="Search"
           >
             <Search className="h-4 w-4" />

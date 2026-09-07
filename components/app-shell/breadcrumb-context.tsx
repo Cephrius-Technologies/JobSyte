@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useContext, useMemo } from "react";
+import React, { useCallback, useContext, useMemo } from "react";
+import { usePathname } from "next/navigation";
 
 export type Crumb = {label: string, href?: string};
 
@@ -14,12 +15,20 @@ type BreadcrumbState = {
 const BreadcrumbContext = React.createContext<BreadcrumbState | null>(null);
 
 export function BreadcrumbProvider({ children }: { children: React.ReactNode }) {
-    const [crumbs, setCrumbs] = React.useState<Crumb[]>([]);
-    const [rightSlot, setRightSlot] = React.useState<React.ReactNode | null>(null);
+    const pathname = usePathname();
+    const [pageCrumbs, setPageCrumbs] = React.useState<{ pathname: string; crumbs: Crumb[] } | null>(null);
+    const [pageActions, setPageActions] = React.useState<{ pathname: string; node: React.ReactNode } | null>(null);
+    const setCrumbs = useCallback((crumbs: Crumb[]) => setPageCrumbs({ pathname, crumbs }), [pathname]);
+    const setRightSlot = useCallback((node: React.ReactNode | null) => setPageActions({ pathname, node }), [pathname]);
 
     const value = useMemo(
-        () => ({ crumbs, setCrumbs, rightSlot, setRightSlot }),
-        [crumbs, rightSlot]
+        () => ({
+            crumbs: pageCrumbs?.pathname === pathname ? pageCrumbs.crumbs : [],
+            setCrumbs,
+            rightSlot: pageActions?.pathname === pathname ? pageActions.node : null,
+            setRightSlot,
+        }),
+        [pageCrumbs, pageActions, pathname, setCrumbs, setRightSlot]
     );
 
     return (

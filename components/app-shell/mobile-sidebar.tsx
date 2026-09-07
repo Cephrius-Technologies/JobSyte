@@ -44,7 +44,7 @@ export function MobileSidebar() {
           size="icon"
           aria-label="Open navigation menu"
           className={cn(
-            "h-9 w-9 shrink-0 cursor-pointer border-primary/30 hover:bg-primary/10 md:hidden",
+            "h-9 w-9 shrink-0 cursor-pointer border-border hover:bg-muted md:hidden",
           )}
         >
           <Menu className="size-4" />
@@ -55,7 +55,7 @@ export function MobileSidebar() {
         side="left"
         className="flex w-[82vw] max-w-[320px] flex-col gap-0 bg-background p-0"
       >
-        <SheetHeader className="p-3">
+        <SheetHeader className="p-4 pr-14">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SheetDescription className="sr-only">
             Jump to any section of JobSyte.
@@ -69,7 +69,7 @@ export function MobileSidebar() {
           <SidebarNav />
         </div>
 
-        <div className="mt-auto flex items-center gap-2 border-t border-primary/10 p-3 text-xs text-muted-foreground">
+        <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground">
           <VersionChangelogDialog />
           <a
             href="https://cephrius.com"

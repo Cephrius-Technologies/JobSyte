@@ -47,34 +47,41 @@
   --radius-4xl: calc(var(--radius) + 16px);
   --color-navheader: var(--navheader);
   --color-mainview: var(--mainview);
+  --color-success: var(--success);
+  --color-success-muted: var(--success-muted);
+  --color-warning: var(--warning);
+  --color-warning-muted: var(--warning-muted);
+  --color-info: var(--info);
+  --color-info-muted: var(--info-muted);
+  --color-danger-muted: var(--danger-muted);
 }
 
 :root {
-  --background: oklch(1 0 0);
+  --background: #f8f9fb;
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.488 0.243 264.376);
+  --primary: #4338ca;
   --primary-foreground: oklch(0.97 0.014 254.604);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
+  --muted-foreground: #626875;
   --accent: oklch(0.967 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
+  --border: #e4e7ec;
+  --input: #d8dce3;
+  --ring: #6366f1;
   --chart-1: oklch(16% 0.02423 256);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
   --radius: 0.625rem;
-  --sidebar: oklch(92.191% 0.0001 271.152);
+  --sidebar: #ffffff;
   --sidebar-foreground: oklch(0.141 0.005 285.823);
   --sidebar-primary: oklch(0.546 0.245 262.881);
   --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
@@ -82,35 +89,42 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
-  --navheader: oklch(92.191% 0.0001 271.152);
-  --mainview: oklch(92.191% 0.0001 271.152);
+  --navheader: var(--card);
+  --mainview: var(--background);
+  --success: #15803d;
+  --success-muted: #f0fdf4;
+  --warning: #92400e;
+  --warning-muted: #fffbeb;
+  --info: #4338ca;
+  --info-muted: #eef2ff;
+  --danger-muted: #fef2f2;
 }
 
 .dark {
-  --background: oklch(0 0 0);
+  --background: #111318;
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
+  --card: #191c23;
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
+  --popover: #191c23;
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.42 0.18 266);
-  --primary-foreground: oklch(0.97 0.014 254.604);
+  --primary: #a5b4fc;
+  --primary-foreground: #171b35;
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
+  --muted-foreground: #a1a7b3;
   --accent: oklch(0.274 0.006 286.033);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.552 0.016 285.938);
+  --border: #2c303a;
+  --input: #3d4350;
+  --ring: #a5b4fc;
   --chart-1: oklch(38% 0.01 255);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(22.324% 0.00154 16.369);
+  --sidebar: #16191f;
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.623 0.214 259.815);
   --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
@@ -118,8 +132,15 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
-  --navheader: oklch(22.324% 0.00154 16.369);
-  --mainview: oklch(22.324% 0.00154 16.369);
+  --navheader: var(--card);
+  --mainview: var(--background);
+  --success: #86efac;
+  --success-muted: #172d24;
+  --warning: #fcd34d;
+  --warning-muted: #30281b;
+  --info: #a5b4fc;
+  --info-muted: #252941;
+  --danger-muted: #342024;
 }
 
 @layer base {
@@ -127,7 +148,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground;
     color-scheme: light;
   }
 
@@ -136,15 +157,8 @@
   }
 }
 
-/* Mobile font + density scaling.
-   Shrinking the root font-size scales every rem-based Tailwind utility
-   (text, padding, gap, width) proportionally so the entire app fits more
-   content on small screens without per-component rewrites. */
+/* Keep controls readable without shrinking spacing or touch targets. */
 @media (max-width: 639px) {
-  html {
-    font-size: 14px;
-  }
-
   /* Prevent iOS auto-zoom on input focus while keeping visual size small */
   input,
   textarea,
@@ -152,14 +166,20 @@
     font-size: 16px;
   }
 
-  /* Avoid horizontal scroll on narrow viewports */
-  body {
-    overflow-x: hidden;
+  [data-slot="button"]:not([data-day]),
+  [data-slot="input"],
+  [data-slot="select-trigger"],
+  [data-slot="dropdown-menu-item"],
+  [data-slot="command-item"] {
+    min-height: 44px;
   }
 
-  /* Leave room above the fixed mobile bottom nav (sidebar.tsx) */
-  main[data-app-shell-main] {
-    padding-bottom: 5rem !important;
+  [data-slot="button"][data-size^="icon"]:not([data-day]) {
+    min-width: 44px;
+  }
+
+  [data-app-shell-main] {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
   }
 }
 
@@ -178,15 +198,45 @@
   }
 
   body:has(#invoice-print-root) #invoice-print-root {
-    position: absolute;
-    inset: 0;
+    position: static;
+    max-width: none;
     padding: 0;
     margin: 0;
-    font-size: 9px !important;
-    line-height: 1.25 !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
     color: #111827 !important;
     background: #ffffff !important;
   }
+
+  body:has(#invoice-print-root) :is([data-app-shell-sidebar], [data-app-shell-header], [data-sonner-toaster]) {
+    display: none !important;
+  }
+
+  body:has(#invoice-print-root) :is(main, main > div, [data-slot="table-container"]),
+  body:has(#invoice-print-root) div:has(#invoice-print-root) {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  #invoice-print-root :is([data-slot="card"], table, th, td) {
+    background: #fff !important;
+    color: #18181b !important;
+    box-shadow: none !important;
+  }
+
+  #invoice-print-root table { table-layout: fixed; width: 100%; }
+  #invoice-print-root th, #invoice-print-root td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding: 10px 8px;
+    font-size: 10pt;
+  }
+  #invoice-print-root thead { display: table-header-group; }
+  #invoice-print-root tr { break-inside: avoid; }
+  #invoice-print-root .text-muted-foreground { color: #626875 !important; }
 
   body:has(#invoice-print-root) #invoice-print-root .print\:hidden {
     display: none !important;

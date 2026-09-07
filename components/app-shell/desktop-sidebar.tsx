@@ -32,17 +32,18 @@ export function DesktopSidebar() {
   return (
     <aside
       className={cn(
-        "hidden overflow-hidden rounded-2xl border border-primary/20 bg-sidebar/40 shadow-lg backdrop-blur supports-backdrop-filter:bg-sidebar/40 md:sticky md:top-3 md:flex md:h-[calc(100vh-1.5rem)] md:shrink-0 md:flex-col md:self-start transition-[width] duration-300 ease-in-out",
-        collapsed ? "md:w-20" : "md:w-64",
+        "hidden overflow-y-auto border-r border-border bg-sidebar md:sticky md:top-0 md:flex md:h-dvh md:shrink-0 md:flex-col md:self-start transition-[width] duration-200 motion-reduce:transition-none",
+        collapsed ? "md:w-[72px]" : "md:w-60",
       )}
     >
+      {!collapsed && <div className="px-5 pt-5 text-sm font-semibold tracking-tight">JobSyte</div>}
       <div
         className={cn(
           "flex items-center p-3",
           collapsed ? "justify-center" : "justify-between",
         )}
       >
-        <div className={cn("p-2", collapsed && "text-center")}>
+        <div className={cn("min-w-0 flex-1 p-2", collapsed && "text-center")}>
           {collapsed ? (
             <Popover>
               <PopoverTrigger asChild>
@@ -87,7 +88,7 @@ export function DesktopSidebar() {
 
       <div
         className={cn(
-          "mt-auto border-t border-primary/10 p-2 text-xs text-muted-foreground flex-col",
+          "mt-auto space-y-2 border-t border-border p-4 text-xs text-muted-foreground flex-col",
           collapsed && "text-center",
         )}
       >

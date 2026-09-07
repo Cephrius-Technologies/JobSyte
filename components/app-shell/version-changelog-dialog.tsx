@@ -122,13 +122,13 @@ function ReleaseCard({
       className={cn(
         "rounded-lg border p-3 sm:p-3.5",
         latest
-          ? "border-primary/30 bg-primary/5 dark:bg-primary/10"
+          ? "border-border bg-primary/5 dark:bg-primary/10"
           : "border-border bg-muted/30 dark:bg-muted/10",
       )}
     >
       <div className="mb-2.5 sm:mb-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[13px] sm:text-sm font-semibold text-primary">
+          <span className="font-mono text-[13px] sm:text-base font-semibold text-foreground">
             {release.version}
           </span>
           {latest && (
