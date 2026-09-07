@@ -7,7 +7,8 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Circle, DollarSign } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -111,21 +112,21 @@ export function InvoicePaymentControls({
   return (
     <>
       {/* Payment status bar — hidden on print */}
-      <div className="mt-6 flex items-center justify-between print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">Payment</span>
           {allPaid ? (
-            <Badge className="bg-green-600 text-white hover:bg-green-600">
+            <StatusBadge tone="success">
               Paid in full
-            </Badge>
+            </StatusBadge>
           ) : paidCount > 0 ? (
-            <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
+            <StatusBadge tone="warning">
               {paidCount} / {items.length} paid
-            </Badge>
+            </StatusBadge>
           ) : (
-            <Badge variant="outline" className="text-muted-foreground">
+            <StatusBadge>
               Unpaid
-            </Badge>
+            </StatusBadge>
           )}
         </div>
 
@@ -198,70 +199,30 @@ export function InvoicePaymentControls({
       </div>
 
       {/* Items table */}
-      <div className="mt-3 overflow-x-auto rounded-md border print:border-0">
-        <div className="min-w-180 print:min-w-0">
-          {/* Header */}
-          <div className="grid grid-cols-14 gap-2 border-b p-3 text-xs font-semibold text-muted-foreground">
-            <div className="col-span-5">Description</div>
-            <div className="col-span-3">Project</div>
-            <div className="col-span-3">Subdivision</div>
-            <div className="col-span-2 text-right">Amount</div>
-            <div className="col-span-1 text-right print:hidden">Paid</div>
-          </div>
-
-          {/* Rows */}
-          {items.map((it) => (
-            <div
-              key={it.id}
-              className="grid grid-cols-14 gap-2 border-b p-3 last:border-b-0"
-            >
-              <div className="col-span-5">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  {it.job_title_snapshot}
-                  {it.is_paid && (
-                    <Badge className="bg-green-600 text-white text-xs hover:bg-green-600 shrink-0">
-                      Paid
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {it.builder_name_snapshot}
-                </div>
-              </div>
-
-              <div className="col-span-3 text-sm text-muted-foreground self-center">
-                {it.project_address_snapshot}
-              </div>
-
-              <div className="col-span-3 text-xs text-muted-foreground self-center">
-                {it.subdivision_name_raw_snapshot}
-              </div>
-
-              <div className="col-span-2 text-right text-sm font-medium self-center">
-                {money(it.job_price_cents_snapshot)}
-              </div>
-
-              {/* Paid toggle — hidden on print */}
-              <div className="col-span-1 flex justify-end items-center print:hidden">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  disabled={isPending}
+      <div className="overflow-hidden rounded-lg border print:overflow-visible print:border-0">
+        <Table className="min-w-[640px] print:min-w-0">
+          <TableHeader><TableRow>
+            <TableHead>Description</TableHead><TableHead>Project Address</TableHead><TableHead>Subdivision</TableHead><TableHead className="text-right">Amount</TableHead><TableHead className="text-right print:hidden">Paid</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>{items.map((it) => (
+            <TableRow key={it.id}>
+              <TableCell className="whitespace-normal">
+                <div className="font-medium">{it.job_title_snapshot}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{it.builder_name_snapshot}</div>
+              </TableCell>
+              <TableCell className="whitespace-normal text-muted-foreground">{it.project_address_snapshot}</TableCell>
+              <TableCell className="whitespace-normal text-muted-foreground">{it.subdivision_name_raw_snapshot}</TableCell>
+              <TableCell className="text-right font-medium tabular-nums">{money(it.job_price_cents_snapshot)}</TableCell>
+              <TableCell className="text-right print:hidden">
+                <Button type="button" variant="ghost" size="icon" disabled={isPending}
                   onClick={() => toggleItem(it.id, it.is_paid)}
-                  aria-label={it.is_paid ? "Mark as unpaid" : "Mark as paid"}
-                  className="size-8"
-                >
-                  {it.is_paid ? (
-                    <CheckCircle2 className="size-4 text-green-600" />
-                  ) : (
-                    <Circle className="size-4 text-muted-foreground" />
-                  )}
+                  aria-label={it.is_paid ? "Mark as unpaid" : "Mark as paid"} className="size-8">
+                  {it.is_paid ? <CheckCircle2 className="size-4 text-success" /> : <Circle className="size-4 text-muted-foreground" />}
                 </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+              </TableCell>
+            </TableRow>
+          ))}</TableBody>
+        </Table>
       </div>
 
       {/* Totals */}
@@ -271,7 +232,7 @@ export function InvoicePaymentControls({
             <span className="text-muted-foreground">Subtotal</span>
             <span className="font-medium">{money(subtotalCents)}</span>
           </div>
-          <div className="flex justify-between text-base font-semibold">
+          <div className="flex justify-between border-t pt-4 text-lg font-semibold tabular-nums">
             <span>Total</span>
             <span>{money(subtotalCents)}</span>
           </div>

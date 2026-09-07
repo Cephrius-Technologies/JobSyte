@@ -69,7 +69,7 @@ export default async function InvoiceViewPage({
   }
 
   return (
-    <div id="invoice-print-root" className="space-y-6 print:space-y-0">
+    <div id="invoice-print-root" className="mx-auto w-full max-w-5xl space-y-6 print:space-y-0">
       <div className="print:hidden">
         <BreadcrumbSetter
           crumbs={[
@@ -79,12 +79,13 @@ export default async function InvoiceViewPage({
         />
       </div>
 
-      <Card className="p-6 print:border-0 print:p-0 print:shadow-none">
-        <div className="flex items-start justify-between gap-6">
+      <Card className="gap-8 p-5 sm:p-8 lg:p-10 print:border-0 print:p-0 print:shadow-none">
+        <div className="flex flex-col items-start justify-between gap-6 sm:flex-row">
           <div>
-            <div className="text-xl font-semibold">
+            <div className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">Invoice</div>
+            <h1 className="mb-3 text-2xl font-semibold tracking-tight">
               {invoice.invoice_number}
-            </div>
+            </h1>
             <div className="text-sm text-muted-foreground">
               Invoice Date: {invoice.invoice_date}
             </div>
@@ -95,16 +96,16 @@ export default async function InvoiceViewPage({
             )}
           </div>
 
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
             <EditInvoiceDialog invoice={invoice} items={items ?? []} />
             <DeleteInvoiceButton invoiceId={invoice.id} redirectTo="/invoices" />
             <PrintButton documentTitle={invoice.invoice_number} />
           </div>
         </div>
 
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="grid gap-8 border-y py-6 sm:grid-cols-2 print:grid-cols-2">
           <div>
-            <div className="text-sm font-semibold">From</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Contractor Information</div>
             <div className="mt-2 text-sm">{invoice.contractor_name}</div>
             {invoice.contractor_address && (
               <div className="text-sm text-muted-foreground whitespace-pre-line">
@@ -119,7 +120,7 @@ export default async function InvoiceViewPage({
           </div>
 
           <div>
-            <div className="text-sm font-semibold">Bill To</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Bill To</div>
             <div className="mt-2 text-sm">{invoice.bill_to_name}</div>
             <div className="text-sm text-muted-foreground whitespace-pre-line">
               {invoice.bill_to_address}

@@ -7,7 +7,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, DollarSign, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -78,22 +78,19 @@ function JobStatusBadges({ job }: { job: JobRow }) {
     <div className="flex flex-wrap items-center gap-2">
       {/* Completion and billing can both be true, so render badges additively. */}
       {job.is_completed ? (
-        <Badge>Completed</Badge>
+        <StatusBadge tone="success">Completed</StatusBadge>
       ) : (
-        <Badge variant="secondary">In progress</Badge>
+        <StatusBadge tone="info">In progress</StatusBadge>
       )}
       {job.is_invoiced && (
-        <Badge
-          variant="outline"
-          className="border-violet-300 bg-violet-50 text-violet-700"
-        >
+        <StatusBadge>
           Invoiced
-        </Badge>
+        </StatusBadge>
       )}
       {job.is_paid && (
-        <Badge className="bg-green-600 text-white hover:bg-green-600">
+        <StatusBadge tone="success">
           Paid
-        </Badge>
+        </StatusBadge>
       )}
     </div>
   );
@@ -265,7 +262,7 @@ export function JobsTable({
       <div className="md:hidden space-y-2">
         {filtered.length === 0 ? (
           <div className="rounded-md border p-4 text-sm text-muted-foreground">
-            No jobs match this filter.
+            {jobs.length === 0 ? "No jobs yet. Use Add Job to start planning work for this project." : "No jobs match this filter. Try a different search or status."}
           </div>
         ) : (
           filtered.map((job) => (
@@ -386,7 +383,7 @@ export function JobsTable({
           <TableHeader>
             <TableRow className="border-b bg-muted/20 hover:bg-muted/20">
               <TableHead className="h-11">Job Title</TableHead>
-              <TableHead className="h-11">Price</TableHead>
+              <TableHead className="h-11 text-right">Price</TableHead>
               {showScheduled && <TableHead className="h-11">Scheduled For</TableHead>}
               {showSuperintendent && <TableHead className="h-11">Superintendent / GC</TableHead>}
               {showCompletedBy && <TableHead className="h-11">Completed By</TableHead>}
@@ -405,14 +402,14 @@ export function JobsTable({
                   }
                   className="text-sm text-muted-foreground"
                 >
-                  No jobs match this filter.
+                  {jobs.length === 0 ? "No jobs yet. Use Add Job to start planning work for this project." : "No jobs match this filter. Try a different search or status."}
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((job) => (
                 <TableRow key={job.id} data-highlight-id={job.id} className="h-14">
                   <TableCell className="font-medium">{job.title}</TableCell>
-                  <TableCell className="tabular-nums">{formatMoney(job.price_cents)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{formatMoney(job.price_cents)}</TableCell>
                   {showScheduled && (
                     <TableCell className="text-muted-foreground">{formatDate(job.scheduled_completion)}</TableCell>
                   )}

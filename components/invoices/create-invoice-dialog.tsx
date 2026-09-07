@@ -381,7 +381,7 @@ export function CreateInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] max-w-4xl overflow-y-auto p-4 sm:w-[calc(100vw-2rem)] sm:p-6">
+      <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] overflow-y-auto p-4 sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:p-6">
         <DialogHeader>
           <DialogTitle>Create New Invoice</DialogTitle>
             {/* <SelectSeparator className=" max-w-4xl"/> */}
@@ -398,7 +398,7 @@ export function CreateInvoiceDialog({
           {/* Contractor */}
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-sm font-semibold">From</div>
+              <div className="text-sm font-semibold">Contractor Information</div>
               <Button
                 type="button"
                 variant="outline"
@@ -440,25 +440,22 @@ export function CreateInvoiceDialog({
                 deleteContractorPreset(item.id);
               }}
             />
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
-                <div className="text-sm font-light">Company Name</div>
-                <Input
-                  value={contractorName}
+                <label htmlFor="create-invoice-dialog-contractorName" className="text-sm font-medium">Company Name</label>
+                <Input id="create-invoice-dialog-contractorName" value={contractorName}
                   onChange={(e) => setContractorName(e.target.value)}
                 />
               </div>
               <div className="space-y-1 md:col-span-2">
-                <div className="text-sm font-light">Address</div>
-                <Input
-                  value={contractorAddress}
+                <label htmlFor="create-invoice-dialog-contractorAddress" className="text-sm font-medium">Address</label>
+                <Input id="create-invoice-dialog-contractorAddress" value={contractorAddress}
                   onChange={(e) => setContractorAddress(e.target.value)}
                 />
               </div>
               <div className="space-y-1">
-                <div className="text-sm font-light">Phone</div>
-                <Input
-                  value={contractorPhone}
+                <label htmlFor="create-invoice-dialog-contractorPhone" className="text-sm font-medium">Phone</label>
+                <Input id="create-invoice-dialog-contractorPhone" value={contractorPhone}
                   onChange={(e) => setContractorPhone(e.target.value)}
                 />
               </div>
@@ -510,25 +507,23 @@ export function CreateInvoiceDialog({
                 deleteBillToPreset(item.id);
               }}
             />
-            <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1 md:col-span-2">
-                <div className="text-sm font-light">Builder Name</div>
-                <Input
-                  value={billToName}
+                <label htmlFor="create-invoice-dialog-billToName" className="text-sm font-medium">Builder Name</label>
+                <Input id="create-invoice-dialog-billToName" value={billToName}
                   onChange={(e) => setBillToName(e.target.value)}
                   placeholder="Builder name"
                 />
               </div>
               <div className="space-y-1 md:col-span-2">
-                <div className="text-sm font-light">Billing Address</div>
-                <Input
-                  value={billToAddress}
+                <label htmlFor="create-invoice-dialog-billToAddress" className="text-sm font-medium">Billing Address</label>
+                <Input id="create-invoice-dialog-billToAddress" value={billToAddress}
                   onChange={(e) => setBillToAddress(e.target.value)}
                   placeholder="Bill to address"
                 />
               </div>
               <div className="space-y-1 md:col-span-2">
-                <div className="text-sm font-light">Billing Email (Optional)</div>
+                <div className="text-sm font-medium">Billing Email (Optional)</div>
                 <Input
                   type="email"
                   value={billToEmail}
@@ -542,8 +537,9 @@ export function CreateInvoiceDialog({
           {/* Dates */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <div className="text-sm font-light">Invoice Date</div>
+              <label htmlFor="project-invoice-date" className="text-sm font-medium">Invoice Date</label>
               <Input
+                id="project-invoice-date"
                 type="date"
                 value={invoiceDate}
                 onChange={(e) => {
@@ -556,8 +552,9 @@ export function CreateInvoiceDialog({
               />
             </div>
             <div className="space-y-2">
-              <div className="text-sm font-light">Due Date (optional)</div>
+              <label htmlFor="project-invoice-due" className="text-sm font-medium">Due Date (optional)</label>
               <Input
+                id="project-invoice-due"
                 type="date"
                 value={dueDate}
                 onChange={(e) => {
@@ -597,9 +594,8 @@ export function CreateInvoiceDialog({
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium">Search Completed jobs</div>
-              <Input
-                value={query}
+              <label htmlFor="create-invoice-dialog-query" className="text-sm font-medium">Search Completed jobs</label>
+              <Input id="create-invoice-dialog-query" value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by job title..."
               />
@@ -617,10 +613,11 @@ export function CreateInvoiceDialog({
                   {filteredJobs.map((j) => (
                     <label
                       key={j.id}
-                      className="flex flex-col items-start justify-between gap-2 border-b p-3 last:border-b-0 sm:flex-row sm:items-center"
+                      className={`flex flex-col items-start justify-between gap-3 border-b p-4 last:border-b-0 sm:flex-row sm:items-center ${selected[j.id] ? "bg-info-muted" : "hover:bg-muted/30"}`}
                     >
                       <div className="flex items-start gap-3">
                         <Checkbox
+                          aria-label={`Include ${j.title} in invoice`}
                           checked={!!selected[j.id]}
                           onCheckedChange={(v) =>
                             setSelected((prev) => ({ ...prev, [j.id]: !!v }))
@@ -643,7 +640,7 @@ export function CreateInvoiceDialog({
             )}
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button

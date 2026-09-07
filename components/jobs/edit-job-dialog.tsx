@@ -377,7 +377,7 @@ export function EditJobDialog({
         </DialogHeader>
 
         <form
-          className="space-y-4"
+          className="space-y-6"
           onSubmit={(event) => {
             event.preventDefault();
             if (isPending || !canSubmit) return;
@@ -473,7 +473,7 @@ export function EditJobDialog({
             )}
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button

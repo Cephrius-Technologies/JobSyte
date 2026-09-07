@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -352,10 +353,11 @@ export function AddJobDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Job</DialogTitle>
+          <DialogDescription>Set the scope, price, and planned completion for this project.</DialogDescription>
         </DialogHeader>
 
         <form
-          className="space-y-4"
+          className="space-y-6"
           onSubmit={(event) => {
             event.preventDefault();
             if (isPending || !canSubmit) return;
@@ -384,8 +386,8 @@ export function AddJobDialog({
 
           <div className="space-y-2">
             <CreatableCombobox
-              label="Job Price"
-              placeholder="Select or create project price..."
+              label="Job Price (USD)"
+              placeholder="$0.00 — select or enter a price"
               items={priceOptions}
               value={selectedPrice}
               onChange={handlePriceChange}
@@ -403,8 +405,9 @@ export function AddJobDialog({
           </div>
 
           <div className="space-y-2">
-            <div className="text-sm font-medium">Scheduled Completion (Optional)</div>
+            <label htmlFor="add-job-scheduled" className="text-sm font-medium">Scheduled Completion (Optional)</label>
             <DatePicker
+              id="add-job-scheduled"
               value={scheduled}
               onChange={setScheduled}
               placeholder="Pick a completion date"
@@ -449,9 +452,9 @@ export function AddJobDialog({
             )}
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
@@ -464,7 +467,7 @@ export function AddJobDialog({
               type="submit"
               disabled={isPending || !canSubmit}
             >
-              {isPending ? "Saving..." : "Save Job"}
+              {isPending ? "Adding..." : "Add Job"}
             </Button>
           </div>
         </form>

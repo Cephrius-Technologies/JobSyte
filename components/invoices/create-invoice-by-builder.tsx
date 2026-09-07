@@ -365,10 +365,8 @@ export function CreateInvoiceByBuilder({
 
       setJobs(eligible);
 
-      // Default select all
-      const initialSel: Record<string, boolean> = {};
-      eligible.forEach((j) => (initialSel[j.id] = true));
-      setSelected(initialSel);
+      // Each invoice starts with an explicit choice of completed jobs.
+      setSelected({});
     } finally {
       setLoadingJobs(false);
     }
@@ -447,28 +445,18 @@ export function CreateInvoiceByBuilder({
 
   return (
     <form
-      className="space-y-6"
+      className="space-y-6 pb-36 md:pb-0"
       onSubmit={(event) => {
         event.preventDefault();
         if (isPending || !canSubmit) return;
         submit();
       }}
     >
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Create Invoice By Builder
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Select a builder, review completed jobs, and generate one invoice
-          across multiple projects.
-        </p>
-      </div>
-
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-6">
           <Card className="space-y-3 p-4 sm:p-5">
             <div className="space-y-1">
-              <div className="text-sm font-semibold">1. Builder</div>
+              <div className="text-sm font-semibold">Builder</div>
               <p className="text-xs text-muted-foreground">
                 Jobs are loaded from completed work tied to this builder only.
               </p>
@@ -497,7 +485,7 @@ export function CreateInvoiceByBuilder({
           <Card className="space-y-4 p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="space-y-1">
-                <div className="text-sm font-semibold">2. From</div>
+                <div className="text-sm font-semibold">Contractor Information</div>
                 <p className="text-xs text-muted-foreground">
                   This appears in the From section of the invoice.
                 </p>
@@ -545,27 +533,24 @@ export function CreateInvoiceByBuilder({
               }}
             />
 
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
-                <div className="text-sm font-medium">Company Name</div>
-                <Input
-                  value={contractorName}
+                <label htmlFor="create-invoice-by-builder-contractorName" className="text-sm font-medium">Company Name</label>
+                <Input id="create-invoice-by-builder-contractorName" value={contractorName}
                   onChange={(e) => setContractorName(e.target.value)}
                   placeholder="Company name"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <div className="text-sm font-medium">Address</div>
-                <Input
-                  value={contractorAddress}
+                <label htmlFor="create-invoice-by-builder-contractorAddress" className="text-sm font-medium">Address</label>
+                <Input id="create-invoice-by-builder-contractorAddress" value={contractorAddress}
                   onChange={(e) => setContractorAddress(e.target.value)}
                   placeholder="Street, city, state, zip"
                 />
               </div>
               <div className="space-y-2">
-                <div className="text-sm font-medium">Phone</div>
-                <Input
-                  value={contractorPhone}
+                <label htmlFor="create-invoice-by-builder-contractorPhone" className="text-sm font-medium">Phone</label>
+                <Input id="create-invoice-by-builder-contractorPhone" value={contractorPhone}
                   onChange={(e) => setContractorPhone(e.target.value)}
                   placeholder="(555) 123-4567"
                 />
@@ -576,7 +561,7 @@ export function CreateInvoiceByBuilder({
           <Card className="space-y-4 p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="space-y-1">
-                <div className="text-sm font-semibold">3. Bill To</div>
+                <div className="text-sm font-semibold">Bill To</div>
                 <p className="text-xs text-muted-foreground">
                   This appears in the client billing section.
                 </p>
@@ -624,19 +609,17 @@ export function CreateInvoiceByBuilder({
               }}
             />
 
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
-                <div className="text-sm font-medium">Builder Name</div>
-                <Input
-                  value={billToName}
+                <label htmlFor="create-invoice-by-builder-billToName" className="text-sm font-medium">Builder Name</label>
+                <Input id="create-invoice-by-builder-billToName" value={billToName}
                   onChange={(e) => setBillToName(e.target.value)}
                   placeholder="Billing company name"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <div className="text-sm font-medium">Billing Address</div>
-                <Input
-                  value={billToAddress}
+                <label htmlFor="create-invoice-by-builder-billToAddress" className="text-sm font-medium">Billing Address</label>
+                <Input id="create-invoice-by-builder-billToAddress" value={billToAddress}
                   onChange={(e) => setBillToAddress(e.target.value)}
                   placeholder="Street, city, state, zip"
                 />
@@ -654,11 +637,12 @@ export function CreateInvoiceByBuilder({
           </Card>
 
           <Card className="space-y-3 p-4 sm:p-5">
-            <div className="text-sm font-semibold">4. Invoice Dates</div>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="text-base font-semibold">Invoice Details</div>
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <div className="text-sm font-medium">Invoice Date</div>
+                <label htmlFor="builder-invoice-date" className="text-sm font-medium">Invoice Date</label>
                 <Input
+                  id="builder-invoice-date"
                   type="date"
                   value={invoiceDate}
                   onChange={(e) => {
@@ -671,8 +655,9 @@ export function CreateInvoiceByBuilder({
                 />
               </div>
               <div className="space-y-2">
-                <div className="text-sm font-medium">Due Date (optional)</div>
+                <label htmlFor="builder-invoice-due" className="text-sm font-medium">Due Date (optional)</label>
                 <Input
+                  id="builder-invoice-due"
                   type="date"
                   value={dueDate}
                   onChange={(e) => {
@@ -701,9 +686,9 @@ export function CreateInvoiceByBuilder({
           <Card className="space-y-4 p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold">5. Completed Jobs</div>
+                <div className="text-sm font-semibold">Completed Jobs</div>
                 <p className="text-xs text-muted-foreground">
-                  Only jobs not already invoiced are shown.
+                  Select the completed jobs to include. Nothing is selected automatically.
                 </p>
               </div>
               <div className="text-right">
@@ -714,9 +699,8 @@ export function CreateInvoiceByBuilder({
 
             {builder && !loadingJobs && jobs.length > 0 && (
               <div className="space-y-2">
-                <div className="text-sm font-medium">Search Jobs</div>
-                <Input
-                  value={jobQuery}
+                <label htmlFor="create-invoice-by-builder-jobQuery" className="text-sm font-medium">Search Jobs</label>
+                <Input id="create-invoice-by-builder-jobQuery" value={jobQuery}
                   onChange={(event) => setJobQuery(event.target.value)}
                   placeholder="Search by title, project, or subdivision..."
                 />
@@ -776,10 +760,10 @@ export function CreateInvoiceByBuilder({
                       key={job.id}
                       className={cn(
                         "flex cursor-pointer items-start justify-between gap-3 border-b p-3 transition-colors last:border-b-0",
-                        selected[job.id] ? "bg-muted/40" : "hover:bg-muted/20",
+                        selected[job.id] ? "bg-info-muted" : "hover:bg-muted/20",
                       )}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex min-w-0 items-start gap-3">
                         <Checkbox
                           checked={!!selected[job.id]}
                           onCheckedChange={(checked) =>
@@ -789,7 +773,7 @@ export function CreateInvoiceByBuilder({
                             }))
                           }
                         />
-                        <div className="space-y-1">
+                        <div className="min-w-0 space-y-1 break-words">
                           <div className="text-sm font-medium">{job.title}</div>
                           <div className="text-xs text-muted-foreground">
                             {job.project_address}
@@ -799,7 +783,7 @@ export function CreateInvoiceByBuilder({
                           </div>
                         </div>
                       </div>
-                      <div className="text-sm font-semibold">
+                      <div className="shrink-0 text-sm font-semibold tabular-nums">
                         {money(job.price_cents)}
                       </div>
                     </label>
@@ -873,9 +857,10 @@ export function CreateInvoiceByBuilder({
         </Card>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
-      <div className="flex justify-end gap-2 xl:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-2 gap-2 border-t bg-card px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] md:static md:flex md:justify-end md:border-0 md:bg-transparent md:p-0 xl:hidden">
+        <div aria-live="polite" className="col-span-2 mb-1 flex justify-between text-sm md:hidden"><span className="text-muted-foreground">Subtotal · {selectedJobsCount} jobs</span><span className="font-semibold tabular-nums">{money(subtotal)}</span></div>
         <Button
           type="button"
           variant="outline"
