@@ -6,6 +6,7 @@ import { Plus, Trash2, Wand2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -350,8 +351,11 @@ export function NewProjectDialog({
     const fd = new FormData();
     fd.set("house_number", normalizeStreetNumber(houseNumber));
     fd.set("street_address", toTitleCase(streetAddress));
+
+
     // City/state stay separate from the street title so invoices snapshot only
     // the project address while maps can still use the extra context.
+
     fd.set("city", toTitleCase(city));
     fd.set("state", normalizeState(projectState));
 
@@ -400,24 +404,24 @@ export function NewProjectDialog({
         onOpenChange(nextOpen);
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>New Project</DialogTitle>
+          <DialogDescription>Add a project address and reuse a saved builder and subdivision, or create them here.</DialogDescription>
         </DialogHeader>
 
         <form
-          className="space-y-4"
+          className="space-y-6"
           onSubmit={(event) => {
             event.preventDefault();
             if (isPending || !canSubmit) return;
             onSubmit();
           }}
         >
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
             <div className="space-y-2">
-              <div className="text-sm font-medium">Street Number</div>
-              <Input
-                value={houseNumber}
+              <label htmlFor="new-project-dialog-houseNumber" className="text-sm font-medium">Street Number</label>
+              <Input id="new-project-dialog-houseNumber" value={houseNumber}
                 onChange={(e) => setHouseNumber(normalizeStreetNumber(e.target.value))}
                 onBlur={() =>
                   setHouseNumber((current) => normalizeStreetNumber(current))
@@ -427,9 +431,8 @@ export function NewProjectDialog({
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <div className="text-sm font-medium">Street Address</div>
-              <Input
-                value={streetAddress}
+              <label htmlFor="new-project-dialog-streetAddress" className="text-sm font-medium">Street Address</label>
+              <Input id="new-project-dialog-streetAddress" value={streetAddress}
                 onChange={(e) => setStreetAddress(e.target.value)}
                 onBlur={() =>
                   setStreetAddress((current) => toTitleCase(current))
@@ -439,9 +442,8 @@ export function NewProjectDialog({
             </div>
 
             <div className="space-y-2 sm:col-span-1">
-              <div className="text-sm font-medium">City</div>
-              <Input
-                value={city}
+              <label htmlFor="new-project-dialog-city" className="text-sm font-medium">City</label>
+              <Input id="new-project-dialog-city" value={city}
                 onChange={(e) => setCity(e.target.value)}
                 onBlur={() => setCity((current) => toTitleCase(current))}
                 placeholder="Dallas"
@@ -449,9 +451,8 @@ export function NewProjectDialog({
             </div>
 
             <div className="space-y-2 sm:col-span-1">
-              <div className="text-sm font-medium">State</div>
-              <Input
-                value={projectState}
+              <label htmlFor="new-project-dialog-projectState" className="text-sm font-medium">State</label>
+              <Input id="new-project-dialog-projectState" value={projectState}
                 onChange={(e) => setProjectState(normalizeState(e.target.value))}
                 onBlur={() =>
                   setProjectState((current) => normalizeState(current))
@@ -606,9 +607,9 @@ export function NewProjectDialog({
             </div>
           </section>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
@@ -621,7 +622,7 @@ export function NewProjectDialog({
               type="submit"
               disabled={isPending || !canSubmit}
             >
-              {isPending ? "Creating..." : "Create"}
+              {isPending ? "Creating..." : "Create Project"}
             </Button>
           </div>
         </form>

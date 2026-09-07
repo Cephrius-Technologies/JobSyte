@@ -1,7 +1,7 @@
 import { deleteProject } from "@/app/(jobsyte-app)/projects/actions";
 import { useRouter } from "next/navigation";
 
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 
-export function DeleteProjectButton({ projectId }: { projectId: string }) {
+export function DeleteProjectButton({ projectId, trigger }: { projectId: string; trigger?: ReactElement }) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -38,7 +38,7 @@ export function DeleteProjectButton({ projectId }: { projectId: string }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button
+        {trigger ?? <Button
           variant="outline"
           size="sm"
           disabled={isDeleting}
@@ -47,7 +47,7 @@ export function DeleteProjectButton({ projectId }: { projectId: string }) {
         >
           <Trash2 className="size-4" />
           <span className="hidden sm:inline">Delete</span>
-        </Button>
+        </Button>}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

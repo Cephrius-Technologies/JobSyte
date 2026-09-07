@@ -326,7 +326,7 @@ export function MonthJobsCalendar({
           </div>
           <Badge
             variant="outline"
-            className="shrink-0 border-primary/25 bg-primary/10 text-primary dark:border-primary/20 dark:bg-primary/14 dark:text-primary-foreground"
+            className="shrink-0 border-primary/25 bg-primary/10 text-primary dark:border-border dark:bg-primary/14 dark:text-primary-foreground"
           >
             {selectedJobs.length} job{selectedJobs.length === 1 ? "" : "s"}
           </Badge>

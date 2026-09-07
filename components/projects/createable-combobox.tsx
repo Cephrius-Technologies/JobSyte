@@ -32,6 +32,7 @@ export function CreatableCombobox({
   onDelete?: (item: ComboboxItem) => Promise<void> | void;
 }) {
   const [open, setOpen] = React.useState(false);
+  const labelId = React.useId();
   const [query, setQuery] = React.useState("");
   const [creating, setCreating] = React.useState(false);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
@@ -125,13 +126,14 @@ export function CreatableCombobox({
 
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium">{label}</div>
+      <div id={labelId} className="text-sm font-medium">{label}</div>
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
+            aria-labelledby={labelId}
             aria-expanded={open}
             className="w-full justify-between"
           >
@@ -140,7 +142,7 @@ export function CreatableCombobox({
           </Button>
         </PopoverTrigger>
 
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-0" align="start">
           <Command>
             <CommandInput
               placeholder={`Search ${label.toLowerCase()}...`}
@@ -180,7 +182,7 @@ export function CreatableCombobox({
               <div className="p-2 text-sm text-muted-foreground">No results.</div>
             </CommandEmpty>
 
-            <CommandGroup>
+            <CommandGroup className="max-h-[min(40dvh,18rem)] overflow-y-auto overscroll-contain">
               {filtered.map((item, index) => (
                 <CommandItem
                   key={item.id}
@@ -247,7 +249,7 @@ export function CreatableCombobox({
         </PopoverContent>
       </Popover>
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

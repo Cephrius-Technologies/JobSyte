@@ -4,6 +4,7 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { StatCard } from "@/components/ui/stat-card";
 import { Card } from "@/components/ui/card";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
 import { AddJobButton } from "@/components/jobs/add-job-button";
@@ -35,25 +36,6 @@ function isMissingProjectLocationColumnError(message: string | undefined) {
   );
 }
 
-function SmallMetricCard({
-  label,
-  value,
-  meta,
-}: {
-  label: string;
-  value: string;
-  meta: string;
-}) {
-  return (
-    <Card className="h-full p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 flex items-end justify-between gap-3">
-        <div className="text-2xl font-semibold leading-none">{value}</div>
-        <div className="text-xs text-muted-foreground">{meta}</div>
-      </div>
-    </Card>
-  );
-}
 
 function MetricRow({
   label,
@@ -260,7 +242,7 @@ export default async function ProjectDashboardPage({
   const mapboxToken = getPublicMapboxAccessToken();
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <BreadcrumbSetter
         crumbs={[
           { label: "Projects", href: "/projects" },
@@ -270,7 +252,7 @@ export default async function ProjectDashboardPage({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold">{projectStreetTitle}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{projectStreetTitle}</h1>
           <p className="text-sm text-muted-foreground">
           Builder: {project.builder_name} • Subdivision: {project.subdivision}
           {projectLocationSubtitle ? ` • Location: ${projectLocationSubtitle}` : ""}
@@ -284,108 +266,105 @@ export default async function ProjectDashboardPage({
           />
           <AddJobButton
             projectId={project.id}
-            label="New Job"
+            label="Add Job"
             className="w-full sm:w-auto"
           />
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,23rem)_minmax(0,1fr)_minmax(0,1fr)] xl:items-stretch">
-        <div className="h-full">
-          <div className="grid gap-3 sm:grid-cols-3 xl:h-full xl:grid-cols-1 xl:grid-rows-3">
-            <SmallMetricCard
-              label="Jobs"
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatCard
+              label="Total Jobs"
               value={String(totalJobs)}
               meta={`${openJobs} open`}
             />
-            <SmallMetricCard
-              label="Completion"
-              value={`${completionPct}%`}
-              meta={`${openJobs} pending`}
+            <StatCard
+              label="Completed Jobs"
+              value={String(completedJobs)}
+              meta={`${completionPct}% complete`}
             />
-            <SmallMetricCard
-              label="Job Value"
+            <StatCard
+              label="Total Project Value"
+              value={formatMoney(totalValue)}
+              meta="All project jobs"
+            />
+            <StatCard
+              label="Completed Value"
               value={formatMoney(completedValue)}
-              meta={`Total ${formatMoney(totalValue)}`}
+              meta="Completed work"
             />
-          </div>
-        </div>
+      </div>
 
-        <Card className="flex h-full flex-col p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-semibold">Job Value</div>
-            <span className="rounded-md bg-primary/15 px-2 py-1 text-xs font-medium text-primary">
-              {projStatus === "completed" ? "Actual" : "Estimated"}
-            </span>
-          </div>
-
-          <div className="mt-4 space-y-1">
-            <div className="text-3xl font-semibold leading-none">
-              {formatMoney(netProfitForDisplay)}
+      <div className="order-2 grid gap-4 lg:order-none lg:grid-cols-2">
+        <Card className="min-w-0 gap-4 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">Job Value</h2>
+              <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                {projStatus === "completed" ? "Actual" : "Estimated"}
+              </span>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Gross Profit: {formatMoney(grossProfitForDisplay)}
-            </div>
-          </div>
-
-          <div className="mt-4 border-t pt-3 space-y-3">
-            <MetricRow label="Revenue" value={formatMoney(revenueForDisplay)} />
-            <MetricRow label="Direct Costs" value={formatMoney(dir_total)} muted={dir_total === 0} />
-            <MetricRow label="Indirect Costs" value={formatMoney(ind_total)} muted={ind_total === 0} />
-          </div>
-
-          <div className="mt-4 border-t pt-3 space-y-2">
-            <MetricRow
-              label="Net Margin"
-              value={`${marginPct}%`}
-            />
-            <MetricRow label="Completed Value" value={formatMoney(completedValue)} muted={completedValue === 0} />
-            <MetricRow label="Remaining" value={formatMoney(remainingValue)} muted={remainingValue === 0} />
-          </div>
-
-          <div className="mt-auto border-t pt-3">
             <Link
               href={`/projects/${project.id}/accounting`}
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
             >
-              View Accounting
-              <ArrowRight className="size-3.5" />
+              View Accounting <ArrowRight className="size-3.5" />
             </Link>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="min-w-0 space-y-1">
+              <div className="text-xs text-muted-foreground">Net Profit</div>
+              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">{formatMoney(netProfitForDisplay)}</div>
+            </div>
+            <div className="min-w-0 space-y-1">
+              <div className="text-xs text-muted-foreground">Gross Profit</div>
+              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">{formatMoney(grossProfitForDisplay)}</div>
+            </div>
+          </div>
+
+          <div className="grid gap-x-6 gap-y-2 border-t pt-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <MetricRow label="Revenue" value={formatMoney(revenueForDisplay)} />
+              <MetricRow label="Direct Costs" value={formatMoney(dir_total)} muted={dir_total === 0} />
+              <MetricRow label="Indirect Costs" value={formatMoney(ind_total)} muted={ind_total === 0} />
+            </div>
+            <div className="space-y-2">
+              <MetricRow label="Net Margin" value={`${marginPct}%`} />
+              <MetricRow label="Completed" value={formatMoney(completedValue)} muted={completedValue === 0} />
+              <MetricRow label="Remaining" value={formatMoney(remainingValue)} muted={remainingValue === 0} />
+            </div>
           </div>
         </Card>
 
-        <Card className="flex h-full flex-col p-4">
-          <div className="text-sm font-semibold">Project Status</div>
-
-          <div className="mt-4 space-y-3">
-            <MetricRow label={`${invoicedJobs} Invoiced`} value={formatMoney(invoicedValue)} />
-            <MetricRow label="Remaining" value={formatMoney(totalValue - invoicedValue)} muted={totalValue - invoicedValue === 0} />
+        <Card className="min-w-0 gap-4 p-4 sm:p-5">
+          <h2 className="text-sm font-semibold">Project Status</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="min-w-0 space-y-1">
+              <div className="text-xs text-muted-foreground">{invoicedJobs} Invoiced</div>
+              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">{formatMoney(invoicedValue)}</div>
+            </div>
+            <div className="min-w-0 space-y-1">
+              <div className="text-xs text-muted-foreground">Remaining to invoice</div>
+              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">{formatMoney(totalValue - invoicedValue)}</div>
+            </div>
           </div>
 
-          <div className="mt-4 border-t pt-4 space-y-3">
-            <div className="text-sm font-medium">Revenue vs. Expenses</div>
-            <ComparisonBar
-              label="Revenue"
-              value={formatMoney(revenueForDisplay)}
-              widthPct={revenueBarPct}
-              tone="primary"
-            />
-            <ComparisonBar
-              label="Expenses"
-              value={formatMoney(totalExpenses)}
-              widthPct={expensesBarPct}
-              tone="muted"
-            />
-            <div className="pt-1 text-xs text-muted-foreground">
-              {pendingJobs} job{pendingJobs === 1 ? "" : "s"} still not invoiced
+          <div className="space-y-3 border-t pt-3">
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-6">
+              <ComparisonBar label="Revenue" value={formatMoney(revenueForDisplay)} widthPct={revenueBarPct} tone="primary" />
+              <ComparisonBar label="Expenses" value={formatMoney(totalExpenses)} widthPct={expensesBarPct} tone="muted" />
             </div>
+            <p className="text-xs text-muted-foreground">
+              {pendingJobs} job{pendingJobs === 1 ? "" : "s"} still not invoiced
+            </p>
           </div>
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
-        <Card className="min-w-0 p-4">
-          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="order-1 grid gap-4 lg:order-none lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start">
+        <Card className="min-w-0 gap-4 p-4 sm:p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-sm font-semibold">Jobs</div>
               <div className="text-xs text-muted-foreground">

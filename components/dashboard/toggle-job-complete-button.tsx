@@ -26,7 +26,7 @@ export function ToggleJobCompleteButton({
       size="sm"
       variant="outline"
       className={cn(
-        "border-primary/30 hover:bg-primary/10",
+        "border-border hover:bg-muted",
         // Compact mode keeps calendar list rows short enough for the bounded dashboard card.
         compact ? "h-7 shrink-0 gap-1 px-2 text-[11px]" : "mt-2",
       )}

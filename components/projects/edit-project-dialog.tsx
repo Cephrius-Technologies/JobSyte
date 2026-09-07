@@ -212,7 +212,7 @@ export function EditProjectDialog({
         </DialogHeader>
 
         <form
-          className="space-y-4"
+          className="space-y-6"
           onSubmit={(event) => {
             event.preventDefault();
             if (isPending || !canSubmit) return;
@@ -221,9 +221,8 @@ export function EditProjectDialog({
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
             <div className="space-y-2">
-              <div className="text-sm font-medium">Street Number</div>
-              <Input
-                value={houseNumber}
+              <label htmlFor="edit-project-dialog-houseNumber" className="text-sm font-medium">Street Number</label>
+              <Input id="edit-project-dialog-houseNumber" value={houseNumber}
                 onChange={(e) => setHouseNumber(normalizeStreetNumber(e.target.value))}
                 onBlur={() =>
                   setHouseNumber((current) => normalizeStreetNumber(current))
@@ -233,9 +232,8 @@ export function EditProjectDialog({
             </div>
 
             <div className="space-y-2 sm:col-span-3">
-              <div className="text-sm font-medium">Street Address</div>
-              <Input
-                value={streetAddress}
+              <label htmlFor="edit-project-dialog-streetAddress" className="text-sm font-medium">Street Address</label>
+              <Input id="edit-project-dialog-streetAddress" value={streetAddress}
                 onChange={(e) => setStreetAddress(e.target.value)}
                 onBlur={() =>
                   setStreetAddress((current) => toTitleCase(current))
@@ -245,9 +243,8 @@ export function EditProjectDialog({
             </div>
 
             <div className="space-y-2 sm:col-span-1">
-              <div className="text-sm font-medium">City</div>
-              <Input
-                value={city}
+              <label htmlFor="edit-project-dialog-city" className="text-sm font-medium">City</label>
+              <Input id="edit-project-dialog-city" value={city}
                 onChange={(e) => setCity(e.target.value)}
                 onBlur={() => setCity((current) => toTitleCase(current))}
                 placeholder="Dallas"
@@ -255,9 +252,8 @@ export function EditProjectDialog({
             </div>
 
             <div className="space-y-2 sm:col-span-1">
-              <div className="text-sm font-medium">State</div>
-              <Input
-                value={projectState}
+              <label htmlFor="edit-project-dialog-projectState" className="text-sm font-medium">State</label>
+              <Input id="edit-project-dialog-projectState" value={projectState}
                 onChange={(e) => setProjectState(normalizeState(e.target.value))}
                 onBlur={() =>
                   setProjectState((current) => normalizeState(current))
@@ -294,7 +290,7 @@ export function EditProjectDialog({
             }}
           />
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button

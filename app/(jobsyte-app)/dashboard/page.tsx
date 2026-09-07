@@ -22,6 +22,7 @@ import {
   MapPin,
   UserRound,
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
 import { MonthJobsCalendar } from "@/components/dashboard/month-jobs-calendar";
 import { Badge } from "@/components/ui/badge";
@@ -182,7 +183,7 @@ export default async function DashboardPage() {
     return (
       <div className="space-y-6">
         <BreadcrumbSetter crumbs={[{ label: "Dashboard", href: "/" }]} />
-        <Card className="border-primary/20 p-6">
+        <Card className="border-border p-6">
           <div className="text-sm text-muted-foreground">
             Failed to load dashboard: {firstError.message}
           </div>
@@ -254,36 +255,30 @@ export default async function DashboardPage() {
     .reduce((sum, j) => sum + (j.price_cents ?? 0), 0);
 
   return (
-    <div className="flex min-h-full flex-col xl:h-full xl:overflow-hidden">
+    <div className="flex min-h-full flex-col">
       <BreadcrumbSetter crumbs={[{ label: "Dashboard", href: "/" }]} />
 
       {/* ─── Page heading ─── */}
-      <div className="shrink-0 pb-4">
-        <h1 className="text-xl font-semibold text-primary">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Today&apos;s schedule, this week&apos;s pipeline, and billing at a
-          glance.
-        </p>
-      </div>
+      <PageHeader title="Dashboard" description="Your schedule, active projects, and billing at a glance." className="pb-6" />
 
       {/* ═══════════════════════════════════════════════
           ROW 1 — KPI stat cards (fixed height, no scroll)
          ═══════════════════════════════════════════════ */}
-      <div className="shrink-0 grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4 pb-4">
+      <div className="shrink-0 grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4 pb-6">
         {/* Schedule Focus */}
-        <Card className="border-primary/20" size="sm">
+        <Card className="border-border" size="sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                <CalendarDays className="size-4 text-primary" />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
+                <CalendarDays className="size-4 text-muted-foreground" />
               </div>
-              <CardTitle className="text-xs font-medium text-primary/80">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Schedule Focus
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tabular-nums sm:text-3xl">
+            <div className="text-2xl font-semibold tracking-tight tabular-nums">
               {dueTodayCount}
             </div>
             <p className="text-xs text-muted-foreground">Jobs due today</p>
@@ -303,19 +298,19 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Work Pipeline */}
-        <Card className="border-primary/20" size="sm">
+        <Card className="border-border" size="sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                <TrendingUp className="size-4 text-primary" />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
+                <TrendingUp className="size-4 text-muted-foreground" />
               </div>
-              <CardTitle className="text-xs font-medium text-primary/80">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Work Pipeline
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tabular-nums sm:text-3xl">
+            <div className="text-2xl font-semibold tracking-tight tabular-nums">
               {openJobsCount}
             </div>
             <p className="text-xs text-muted-foreground">Open jobs</p>
@@ -338,19 +333,19 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Projects */}
-        <Card className="border-primary/20" size="sm">
+        <Card className="border-border" size="sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                <FolderKanban className="size-4 text-primary" />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
+                <FolderKanban className="size-4 text-muted-foreground" />
               </div>
-              <CardTitle className="text-xs font-medium text-primary/80">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Active Projects
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tabular-nums sm:text-3xl">
+            <div className="text-2xl font-semibold tracking-tight tabular-nums">
               {projects.length}
             </div>
             <p className="text-xs text-muted-foreground">Active projects</p>
@@ -370,7 +365,7 @@ export default async function DashboardPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full border-primary/30 hover:bg-primary/10"
+                  className="w-full border-border hover:bg-muted"
                 >
                   Open Projects
                 </Button>
@@ -380,19 +375,19 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Invoices this month */}
-        <Card className="border-primary/20" size="sm">
+        <Card className="border-border" size="sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                <DollarSign className="size-4 text-primary" />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
+                <DollarSign className="size-4 text-muted-foreground" />
               </div>
-              <CardTitle className="text-xs font-medium text-primary/80">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Invoices · {monthName}
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tabular-nums sm:text-3xl">
+            <div className="text-2xl font-semibold tracking-tight tabular-nums">
               {invoiceMonthCount}
             </div>
             <p className="text-xs text-muted-foreground">Invoices issued</p>
@@ -414,18 +409,18 @@ export default async function DashboardPage() {
           ROW 2 — Below xl, panels stack and the app shell owns page scrolling.
           At xl and above, panels fit the viewport and scroll internally.
          ═══════════════════════════════════════════════ */}
-      <div className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[2fr_1fr] xl:grid-rows-[1fr]">
-        <div className="flex flex-col gap-4 xl:min-h-0 xl:overflow-hidden xl:pr-1">
-          <Card className="flex min-h-[40rem] flex-col border-primary/20 xl:min-h-0 xl:flex-1">
+      <div className="grid gap-4  xl:flex-1 xl:grid-cols-[2fr_1fr] ">
+        <div className="flex flex-col gap-4   xl:pr-1">
+          <Card className="flex min-h-[40rem] flex-col border-border  xl:flex-1">
             <CardHeader className="shrink-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <CardTitle className="text-primary">Jobs Calendar</CardTitle>
+                  <CardTitle className="text-foreground">Jobs Calendar</CardTitle>
                   <CardDescription>
                     Select a date to review scheduled jobs and completion status.
                   </CardDescription>
                 </div>
-                <Badge variant="outline" className="border-primary/30 bg-primary/10">
+                <Badge variant="outline" className="border-border bg-muted">
                   {monthJobs.length} scheduled
                 </Badge>
               </div>
@@ -444,7 +439,7 @@ export default async function DashboardPage() {
         {/* Removed Quick Actions , Month overview and Futrure Ideas widget */}
 
         {/* Right column — Jobs this week + Overdue */}
-        <div className="flex flex-col gap-4 xl:min-h-0">
+        <div className="flex flex-col gap-4 ">
           {/* Overdue alert */}
           {overdueJobs.length > 0 && (
             <Card className="border-destructive/30 bg-destructive/5 shrink-0" size="sm">
@@ -489,11 +484,11 @@ export default async function DashboardPage() {
           )}
 
           {/* Jobs This Week */}
-          <Card className="mb-20 flex max-h-[60vh] min-h-0 flex-1 flex-col border-primary/20 md:mb-0 xl:max-h-none">
+          <Card className="mb-20 flex max-h-[60vh] min-h-0 flex-1 flex-col border-border md:mb-0 xl:max-h-none">
             <CardHeader className="shrink-0">
               <div className="flex items-center justify-between ">
                 <div>
-                  <CardTitle className="text-primary">
+                  <CardTitle className="text-foreground">
                     Jobs This Week
                   </CardTitle>
                   <CardDescription>
@@ -502,7 +497,7 @@ export default async function DashboardPage() {
                 </div>
                 <Badge
                   variant="outline"
-                  className="border-primary/30 bg-primary/10"
+                  className="border-border bg-muted"
                 >
                   {upcomingJobs.length}
                 </Badge>
@@ -518,7 +513,7 @@ export default async function DashboardPage() {
                   {upcomingJobs.map((job) => (
                     <div
                       key={job.id}
-                      className="rounded-lg border border-primary/20 bg-primary/3 p-3 dark:bg-primary/7"
+                      className="rounded-lg border border-border bg-primary/3 p-3 dark:bg-primary/7"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 space-y-2">
@@ -553,7 +548,7 @@ export default async function DashboardPage() {
                             <span>{job.scheduled_completion}</span>
                             <Link
                               href={`/projects/${job.project_id}`}
-                              className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-primary/80"
+                              className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-muted-foreground"
                             >
                               Open project
                               <ChevronRight className="size-3.5" />

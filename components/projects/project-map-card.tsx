@@ -166,7 +166,7 @@ export function ProjectMapCard({
         ? "Mapbox could not deliver the satellite image. Check the access token and try again."
       : status === "CONFIGURATION_ERROR"
         ? "Add GOOGLE_MAPS_API_KEY to enable project address search."
-        : `Google Maps API could not find "${streetAddress}". Check the current project address and try again.`;
+        : `Google Maps could not find "${streetAddress}". Check the current project address and try again.`;
 
   function handleMapImageError() {
     setStatus("MAPBOX_IMAGE_ERROR");
@@ -176,7 +176,7 @@ export function ProjectMapCard({
 
   return (
     <>
-      <Card className="flex flex-col p-4">
+      <Card className="min-w-0 flex flex-col gap-4 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-sm font-semibold">Project Satellite Map</div>
@@ -193,7 +193,7 @@ export function ProjectMapCard({
           </Button>
         </div>
 
-        <div className="relative mt-4 flex aspect-[4/3] overflow-hidden rounded-md border bg-muted/40">
+        <div className="relative flex aspect-[4/3] overflow-hidden rounded-md border bg-muted/40">
           {isMapReady ? (
             <Image
               unoptimized
@@ -201,7 +201,7 @@ export function ProjectMapCard({
               src={mapImageUrl}
               alt={`Satellite map for ${streetAddress}`}
               className="object-cover"
-              sizes="(min-width: 1280px) 24rem, 100vw"
+              sizes="(min-width: 1024px) 20rem, 100vw"
               onError={handleMapImageError}
             />
           ) : (
@@ -227,7 +227,7 @@ export function ProjectMapCard({
           )}
         </div>
 
-        <div className="mt-3 flex items-center justify-between gap-3 border-t pt-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
           <span className="text-xs text-muted-foreground">
             {status
               ? `Google search: ${status} · Mapbox satellite view`

@@ -88,7 +88,7 @@ export function QuickJobComplete({
 
   if (jobs.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-primary/20 p-4 text-center">
+      <div className="rounded-md border border-dashed border-border p-4 text-center">
         <p className="text-sm text-muted-foreground">No jobs yet</p>
       </div>
     );
@@ -149,7 +149,7 @@ export function QuickJobComplete({
         {incompleteJobs.map((job) => (
           <div
             key={job.id}
-            className="flex items-center justify-between gap-2 rounded-md border border-primary/10 bg-primary/2 p-2 text-sm hover:bg-primary/5"
+            className="flex items-center justify-between gap-2 rounded-md border border-border bg-primary/2 p-2 text-sm hover:bg-muted/50"
           >
             <div className="min-w-0 flex-1">
               {/* Title gets its own row so it isn't squeezed out by the status badges. */}
