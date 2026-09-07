@@ -1,4 +1,5 @@
 import { LATEST_RELEASE, RELEASE_NOTES } from "@/lib/release-notes";
+import { describe, expect, it } from "vitest";
 
 describe("release notes metadata", () => {
   it("keeps the latest release pointed at the first changelog entry", () => {
