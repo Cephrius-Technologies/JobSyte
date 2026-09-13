@@ -53,7 +53,7 @@ export function MobileSidebar() {
 
       <SheetContent
         side="left"
-        className="flex w-[82vw] max-w-[320px] flex-col gap-0 bg-background p-0"
+        className="flex max-w-[320px] flex-col gap-0 overflow-hidden rounded-2xl border border-sidebar-border bg-sidebar p-0 shadow-xl data-[side=left]:inset-y-3 data-[side=left]:left-3 data-[side=left]:h-[calc(100dvh-1.5rem)] data-[side=left]:w-[82vw] data-[side=left]:sm:max-w-[320px]"
       >
         <SheetHeader className="p-4 pr-14">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
@@ -65,7 +65,7 @@ export function MobileSidebar() {
 
         <Separator />
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <SidebarNav />
         </div>
 

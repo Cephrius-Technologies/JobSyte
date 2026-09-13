@@ -298,7 +298,7 @@ export function Header() {
   return (
     <header
       data-app-shell-header
-      className="shrink-0 border-b border-border bg-card px-4 py-3 sm:px-6"
+      className="sticky top-2 z-40 mx-2 mt-2 shrink-0 rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-sm backdrop-blur supports-backdrop-filter:bg-card/90 sm:px-6"
     >
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 md:grid-cols-[minmax(0,1fr)_minmax(10rem,24rem)_auto]">
         <div className="hidden min-w-0 items-center gap-2 md:flex">

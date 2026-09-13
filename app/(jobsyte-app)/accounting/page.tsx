@@ -18,6 +18,23 @@ import type {
  * Compute profitability numbers for a single project given pre-fetched
  * job and expense rows.
  */
+function isMissingProjectLocationColumnError(message: string | undefined) {
+  const normalized = (message ?? "").toLowerCase();
+  return (
+    normalized.includes("project_city") ||
+    normalized.includes("project_state") ||
+    (normalized.includes("schema cache") && normalized.includes("projects"))
+  );
+}
+
+function withLegacyProjectLocation<T extends Record<string, unknown>>(project: T) {
+  return {
+    ...project,
+    project_city: "project_city" in project ? project.project_city : null,
+    project_state: "project_state" in project ? project.project_state : null,
+  } as T & { project_city: string | null; project_state: string | null };
+}
+
 function buildOverviewRow(
   project: {
     id: string;
@@ -109,11 +126,27 @@ export default async function AccountingOverviewPage() {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (projectsErr) {
-    return <p className="text-sm text-destructive">{projectsErr.message}</p>;
-  }
+  let allProjects = (projectsRes.data ?? []).map(withLegacyProjectLocation);
 
-  const allProjects = projects ?? [];
+  if (
+    projectsRes.error &&
+    isMissingProjectLocationColumnError(projectsRes.error.message)
+  ) {
+    const legacyProjectsRes = await supabase
+      .from("projects")
+      .select("id, project_address, builder_name, subdivision")
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+
+    if (legacyProjectsRes.error) {
+      return <p className="text-sm text-destructive">{legacyProjectsRes.error.message}</p>;
+    }
+
+    allProjects = (legacyProjectsRes.data ?? []).map(withLegacyProjectLocation);
+  } else if (projectsRes.error) {
+    return <p className="text-sm text-destructive">{projectsRes.error.message}</p>;
+  }
   if (allProjects.length === 0) {
     return (
       <div className="space-y-6">
