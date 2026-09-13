@@ -11,6 +11,15 @@ import {
 } from "@/components/projects/project-location";
 import type { ProjectExpense, ProjectProfitability, ProjectStatus } from "@/components/accounting/types";
 
+function isMissingProjectLocationColumnError(message: string | undefined) {
+  const normalized = (message ?? "").toLowerCase();
+  return (
+    normalized.includes("project_city") ||
+    normalized.includes("project_state") ||
+    (normalized.includes("schema cache") && normalized.includes("projects"))
+  );
+}
+
 export default async function ProjectAccountingFromProjectPage({
   params,
 }: {
@@ -28,13 +37,38 @@ export default async function ProjectAccountingFromProjectPage({
   if (userError || !user) redirect("/login");
   if (!companyId) redirect("/login");
 
-  const { data: project } = await supabase
+  let projectRes = await supabase
     .from("projects")
     .select("id, project_address, project_city, project_state, builder_name, subdivision")
     .eq("id", id)
     .eq("company_id", companyId)
     .is("deleted_at", null)
     .maybeSingle();
+
+  if (
+    projectRes.error &&
+    isMissingProjectLocationColumnError(projectRes.error.message)
+  ) {
+    projectRes = await supabase
+      .from("projects")
+      .select("id, project_address, builder_name, subdivision")
+      .eq("id", id)
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .maybeSingle();
+  }
+
+  if (projectRes.error) {
+    return <p className="text-sm text-destructive">{projectRes.error.message}</p>;
+  }
+
+  const project = projectRes.data
+    ? {
+        ...projectRes.data,
+        project_city: "project_city" in projectRes.data ? projectRes.data.project_city : null,
+        project_state: "project_state" in projectRes.data ? projectRes.data.project_state : null,
+      }
+    : null;
 
   if (!project) {
     return <div className="text-sm text-muted-foreground">Project not found.</div>;

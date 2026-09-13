@@ -102,7 +102,7 @@ export default async function AccountingOverviewPage() {
   if (!companyId)         redirect("/login");
 
   // Fetch all non-deleted projects for the company
-  const { data: projects, error: projectsErr } = await supabase
+  const projectsRes = await supabase
     .from("projects")
     .select("id, project_address, project_city, project_state, builder_name, subdivision")
     .eq("company_id", companyId)
