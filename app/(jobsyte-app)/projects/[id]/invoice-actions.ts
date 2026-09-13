@@ -5,6 +5,7 @@ import { getActiveCompanyId } from "@/lib/active-company";
 import { resolveInvoiceDueDate } from "@/lib/settings/preferences";
 import { getProjectStreetTitle } from "@/components/projects/project-location";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 function formatInvoiceNumber() {
   // MVP-safe unique-ish number (no DB sequence needed)
@@ -127,6 +128,7 @@ export async function createInvoice(projectId: string, formData: FormData) {
       message: invErr?.message ?? "Failed to create invoice.",
     };
 
+
   // Insert invoice items (snapshots)
   const items = selected.map((j) => ({
     invoice_id: invoice.id,
@@ -138,6 +140,7 @@ export async function createInvoice(projectId: string, formData: FormData) {
     builder_name_snapshot: project.builder_name,
     job_title_snapshot: j.title,
     job_price_cents_snapshot: j.price_cents,
+
     // A job can be paid from Projects before invoicing. Carry that state onto
     // the new invoice item so Invoices immediately matches the job status.
     is_paid: j.is_paid === true,
@@ -158,5 +161,6 @@ export async function createInvoice(projectId: string, formData: FormData) {
     .update({ is_invoiced: true })
     .in("id", jobIds);
 
+  revalidatePath(`/invoices/${invoice.id}`);
   return { ok: true, invoiceId: invoice.id as string };
 }

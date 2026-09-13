@@ -17,7 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createClient } from "@/lib/supabase/client";
 import { createInvoice } from "@/app/(jobsyte-app)/projects/[id]/invoice-actions";
-import { readPreferenceSettings, suggestDueDate } from "@/lib/settings/preferences";
+import {
+  readPreferenceSettings,
+  suggestDueDate,
+} from "@/lib/settings/preferences";
 import {
   CreatableCombobox,
   type ComboboxItem,
@@ -151,7 +154,10 @@ export function CreateInvoiceDialog({
   function persistBillToPresets(next: BillToPreset[]) {
     setBillToPresets(next);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(BILL_TO_PRESETS_STORAGE_KEY, JSON.stringify(next));
+      window.localStorage.setItem(
+        BILL_TO_PRESETS_STORAGE_KEY,
+        JSON.stringify(next),
+      );
     }
   }
 
@@ -345,10 +351,10 @@ export function CreateInvoiceDialog({
 
   const canSubmit = Boolean(
     contractorName.trim() &&
-      billToName.trim() &&
-      billToAddress.trim() &&
-      invoiceDate.trim() &&
-      selectedJobs.length > 0,
+    billToName.trim() &&
+    billToAddress.trim() &&
+    invoiceDate.trim() &&
+    selectedJobs.length > 0,
   );
 
   function submit() {
@@ -374,8 +380,7 @@ export function CreateInvoiceDialog({
       }
 
       onOpenChange(false);
-      router.push(`/invoices/${res.invoiceId}`);
-      router.refresh();
+      router.replace(`/invoices/${res.invoiceId}`);
     });
   }
 
@@ -384,7 +389,7 @@ export function CreateInvoiceDialog({
       <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] overflow-y-auto p-4 sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:p-6">
         <DialogHeader>
           <DialogTitle>Create New Invoice</DialogTitle>
-            {/* <SelectSeparator className=" max-w-4xl"/> */}
+          {/* <SelectSeparator className=" max-w-4xl"/> */}
         </DialogHeader>
 
         <form
@@ -398,7 +403,9 @@ export function CreateInvoiceDialog({
           {/* Contractor */}
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-sm font-semibold">Contractor Information</div>
+              <div className="text-sm font-semibold">
+                Contractor Information
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -442,20 +449,41 @@ export function CreateInvoiceDialog({
             />
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
-                <label htmlFor="create-invoice-dialog-contractorName" className="text-sm font-medium">Company Name</label>
-                <Input id="create-invoice-dialog-contractorName" value={contractorName}
+                <label
+                  htmlFor="create-invoice-dialog-contractorName"
+                  className="text-sm font-medium"
+                >
+                  Company Name
+                </label>
+                <Input
+                  id="create-invoice-dialog-contractorName"
+                  value={contractorName}
                   onChange={(e) => setContractorName(e.target.value)}
                 />
               </div>
               <div className="space-y-1 md:col-span-2">
-                <label htmlFor="create-invoice-dialog-contractorAddress" className="text-sm font-medium">Address</label>
-                <Input id="create-invoice-dialog-contractorAddress" value={contractorAddress}
+                <label
+                  htmlFor="create-invoice-dialog-contractorAddress"
+                  className="text-sm font-medium"
+                >
+                  Address
+                </label>
+                <Input
+                  id="create-invoice-dialog-contractorAddress"
+                  value={contractorAddress}
                   onChange={(e) => setContractorAddress(e.target.value)}
                 />
               </div>
               <div className="space-y-1">
-                <label htmlFor="create-invoice-dialog-contractorPhone" className="text-sm font-medium">Phone</label>
-                <Input id="create-invoice-dialog-contractorPhone" value={contractorPhone}
+                <label
+                  htmlFor="create-invoice-dialog-contractorPhone"
+                  className="text-sm font-medium"
+                >
+                  Phone
+                </label>
+                <Input
+                  id="create-invoice-dialog-contractorPhone"
+                  value={contractorPhone}
                   onChange={(e) => setContractorPhone(e.target.value)}
                 />
               </div>
@@ -509,21 +537,37 @@ export function CreateInvoiceDialog({
             />
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1 md:col-span-2">
-                <label htmlFor="create-invoice-dialog-billToName" className="text-sm font-medium">Builder Name</label>
-                <Input id="create-invoice-dialog-billToName" value={billToName}
+                <label
+                  htmlFor="create-invoice-dialog-billToName"
+                  className="text-sm font-medium"
+                >
+                  Builder Name
+                </label>
+                <Input
+                  id="create-invoice-dialog-billToName"
+                  value={billToName}
                   onChange={(e) => setBillToName(e.target.value)}
                   placeholder="Builder name"
                 />
               </div>
               <div className="space-y-1 md:col-span-2">
-                <label htmlFor="create-invoice-dialog-billToAddress" className="text-sm font-medium">Billing Address</label>
-                <Input id="create-invoice-dialog-billToAddress" value={billToAddress}
+                <label
+                  htmlFor="create-invoice-dialog-billToAddress"
+                  className="text-sm font-medium"
+                >
+                  Billing Address
+                </label>
+                <Input
+                  id="create-invoice-dialog-billToAddress"
+                  value={billToAddress}
                   onChange={(e) => setBillToAddress(e.target.value)}
                   placeholder="Bill to address"
                 />
               </div>
               <div className="space-y-1 md:col-span-2">
-                <div className="text-sm font-medium">Billing Email (Optional)</div>
+                <div className="text-sm font-medium">
+                  Billing Email (Optional)
+                </div>
                 <Input
                   type="email"
                   value={billToEmail}
@@ -537,7 +581,12 @@ export function CreateInvoiceDialog({
           {/* Dates */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="project-invoice-date" className="text-sm font-medium">Invoice Date</label>
+              <label
+                htmlFor="project-invoice-date"
+                className="text-sm font-medium"
+              >
+                Invoice Date
+              </label>
               <Input
                 id="project-invoice-date"
                 type="date"
@@ -546,13 +595,20 @@ export function CreateInvoiceDialog({
                   const nextInvoiceDate = e.target.value;
                   setInvoiceDate(nextInvoiceDate);
                   if (!dueDateManuallyEdited) {
-                    setDueDate(suggestDueDate(nextInvoiceDate, defaultDueDays) ?? "");
+                    setDueDate(
+                      suggestDueDate(nextInvoiceDate, defaultDueDays) ?? "",
+                    );
                   }
                 }}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="project-invoice-due" className="text-sm font-medium">Due Date (optional)</label>
+              <label
+                htmlFor="project-invoice-due"
+                className="text-sm font-medium"
+              >
+                Due Date (optional)
+              </label>
               <Input
                 id="project-invoice-due"
                 type="date"
@@ -570,7 +626,9 @@ export function CreateInvoiceDialog({
                   className="h-auto px-0 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     setDueDateManuallyEdited(false);
-                    setDueDate(suggestDueDate(invoiceDate, defaultDueDays) ?? "");
+                    setDueDate(
+                      suggestDueDate(invoiceDate, defaultDueDays) ?? "",
+                    );
                   }}
                 >
                   Reset to default ({defaultDueDays} days)
@@ -594,8 +652,15 @@ export function CreateInvoiceDialog({
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="create-invoice-dialog-query" className="text-sm font-medium">Search Completed jobs</label>
-              <Input id="create-invoice-dialog-query" value={query}
+              <label
+                htmlFor="create-invoice-dialog-query"
+                className="text-sm font-medium"
+              >
+                Search Completed jobs
+              </label>
+              <Input
+                id="create-invoice-dialog-query"
+                value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by job title..."
               />
@@ -626,7 +691,8 @@ export function CreateInvoiceDialog({
                         <div>
                           <div className="text-sm font-medium">{j.title}</div>
                           <div className="text-xs text-muted-foreground">
-                            Scheduled: {j.scheduled_completion ?? "No scheduled date"}
+                            Scheduled:{" "}
+                            {j.scheduled_completion ?? "No scheduled date"}
                           </div>
                         </div>
                       </div>
@@ -640,7 +706,11 @@ export function CreateInvoiceDialog({
             )}
           </div>
 
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
