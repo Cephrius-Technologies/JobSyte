@@ -438,8 +438,7 @@ export function CreateInvoiceByBuilder({
         return;
       }
 
-      router.push(`/invoices/${res.invoiceId}`);
-      router.refresh();
+      router.replace(`/invoices/${res.invoiceId}`);
     });
   }
 
