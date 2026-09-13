@@ -4,14 +4,14 @@ import { useState } from "react";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EditProjectDialog } from "./edit-project-dialog";
-import type { LookupItem, ProjectListItem } from "./types";
+import type { EditableProject, LookupItem } from "./types";
 
 export function EditProjectButton({
   project,
   builders,
   subdivisions,
 }: {
-  project: ProjectListItem;
+  project: EditableProject;
   builders: LookupItem[];
   subdivisions: LookupItem[];
 }) {
@@ -22,7 +22,7 @@ export function EditProjectButton({
       <Button
         type="button"
         variant="outline"
-        size="sm"
+        size="lg"
         className="gap-2 cursor-pointer"
         onClick={() => setOpen(true)}
       >

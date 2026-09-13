@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import type { ProjectListItem } from "./types";
+import type { EditableProject } from "./types";
 
 type Item = { id: string; name: string };
 
@@ -77,11 +77,11 @@ function findItemByName(items: ComboboxItem[], name: string | null) {
   return items.find((item) => item.name.trim().toLowerCase() === target) ?? null;
 }
 
-function getInitialCity(project: ProjectListItem) {
+function getInitialCity(project: EditableProject) {
   return project.project_city ?? splitProjectAddress(project.project_address).city;
 }
 
-function getInitialState(project: ProjectListItem) {
+function getInitialState(project: EditableProject) {
   return project.project_state ?? splitProjectAddress(project.project_address).state;
 }
 
@@ -94,7 +94,7 @@ export function EditProjectDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  project: ProjectListItem;
+  project: EditableProject;
   initialBuilders: Item[];
   initialSubdivisions: Item[];
 }) {

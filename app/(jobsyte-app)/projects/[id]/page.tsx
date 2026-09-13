@@ -17,7 +17,11 @@ import {
   getProjectStreetTitle,
 } from "@/components/projects/project-location";
 import { getPublicMapboxAccessToken } from "@/lib/maps/mapbox";
-import type { ProjectProfitability, ProjectStatus } from "@/components/accounting/types";
+import type {
+  ProjectProfitability,
+  ProjectStatus,
+} from "@/components/accounting/types";
+import { EditProjectButton } from "@/components/projects/edit-project-button";
 
 function formatMoney(cents: number) {
   const dollars = cents / 100;
@@ -36,7 +40,6 @@ function isMissingProjectLocationColumnError(message: string | undefined) {
   );
 }
 
-
 function MetricRow({
   label,
   value,
@@ -49,7 +52,13 @@ function MetricRow({
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <span className={muted ? "tabular-nums text-muted-foreground" : "tabular-nums font-medium"}>
+      <span
+        className={
+          muted
+            ? "tabular-nums text-muted-foreground"
+            : "tabular-nums font-medium"
+        }
+      >
         {value}
       </span>
     </div>
@@ -75,7 +84,11 @@ function ComparisonBar({
       </div>
       <div className="h-2 rounded-full bg-muted/60 overflow-hidden">
         <div
-          className={tone === "primary" ? "h-full rounded-full bg-primary" : "h-full rounded-full bg-muted-foreground/40"}
+          className={
+            tone === "primary"
+              ? "h-full rounded-full bg-primary"
+              : "h-full rounded-full bg-muted-foreground/40"
+          }
           style={{ width: `${Math.max(widthPct, 4)}%` }}
         />
       </div>
@@ -100,7 +113,9 @@ export default async function ProjectDashboardPage({
 
   let projectRes = await supabase
     .from("projects")
-    .select("id, project_address, project_city, project_state, builder_name, subdivision")
+    .select(
+      "id, project_address, project_city, project_state, builder_name, subdivision, builder_id, subdivision_id",
+    )
     .is("deleted_at", null)
     .eq("id", id)
     .single();
@@ -111,7 +126,7 @@ export default async function ProjectDashboardPage({
   ) {
     projectRes = await supabase
       .from("projects")
-      .select("id, project_address, builder_name, subdivision")
+      .select("id, project_address, builder_name, subdivision, builder_id, subdivision_id")
       .is("deleted_at", null)
       .eq("id", id)
       .single();
@@ -120,9 +135,20 @@ export default async function ProjectDashboardPage({
   const project = projectRes.data
     ? {
         ...projectRes.data,
-        project_city: "project_city" in projectRes.data ? projectRes.data.project_city : null,
+        project_city:
+          "project_city" in projectRes.data
+            ? projectRes.data.project_city
+            : null,
         project_state:
-          "project_state" in projectRes.data ? projectRes.data.project_state : null,
+          "project_state" in projectRes.data
+            ? projectRes.data.project_state
+            : null,
+        builder_id:
+          "builder_id" in projectRes.data ? projectRes.data.builder_id : null,
+        subdivision_id:
+          "subdivision_id" in projectRes.data
+            ? projectRes.data.subdivision_id
+            : null,
       }
     : null;
 
@@ -132,10 +158,12 @@ export default async function ProjectDashboardPage({
     );
   }
 
-  const [jobsRes, expensesRes] = await Promise.all([
+  const [jobsRes, expensesRes, buildersRes, subdivisionsRes] = await Promise.all([
     supabase
       .from("jobs")
-      .select("id, title, price_cents, scheduled_completion, is_completed, superintendent, completed_by_type, completed_by_id, completed_by_name, is_invoiced, is_paid")
+      .select(
+        "id, title, price_cents, scheduled_completion, is_completed, superintendent, completed_by_type, completed_by_id, completed_by_name, is_invoiced, is_paid",
+      )
       .eq("project_id", project.id)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
@@ -143,10 +171,14 @@ export default async function ProjectDashboardPage({
       .from("project_expenses")
       .select("amount_cents, cost_type, value_type")
       .eq("project_id", project.id),
+    supabase.from("builders").select("id, name").order("name"),
+    supabase.from("subdivisions").select("id, name").order("name"),
   ]);
 
   const { data: jobs } = jobsRes;
   const expenses = expensesRes.data ?? [];
+  const builders = buildersRes.data ?? [];
+  const subdivisions = subdivisionsRes.data ?? [];
 
   const allJobs = jobs ?? [];
   const totalJobs = allJobs.length;
@@ -155,39 +187,51 @@ export default async function ProjectDashboardPage({
   // Profitability
   const rawStatus = (project as { status?: string }).status ?? "not-started";
   const projStatus: ProjectStatus =
-    rawStatus === "completed" || rawStatus === "active" || rawStatus === "not-started"
+    rawStatus === "completed" ||
+    rawStatus === "active" ||
+    rawStatus === "not-started"
       ? rawStatus
       : completedJobs === totalJobs && totalJobs > 0
-      ? "completed"
-      : totalJobs === 0
-      ? "not-started"
-      : "active";
+        ? "completed"
+        : totalJobs === 0
+          ? "not-started"
+          : "active";
 
-  const rev_cents       = allJobs.filter((j) => j.is_completed).reduce((s, j) => s + (j.price_cents ?? 0), 0);
-  const est_rev_cents   = allJobs.reduce((s, j) => s + (j.price_cents ?? 0), 0);
-  const dir_actual      = expenses.filter((e) => e.cost_type === "direct"   && e.value_type === "actual").reduce((s, e) => s + e.amount_cents, 0);
-  const dir_total       = expenses.filter((e) => e.cost_type === "direct").reduce((s, e) => s + e.amount_cents, 0);
-  const ind_actual      = expenses.filter((e) => e.cost_type === "indirect" && e.value_type === "actual").reduce((s, e) => s + e.amount_cents, 0);
-  const ind_total       = expenses.filter((e) => e.cost_type === "indirect").reduce((s, e) => s + e.amount_cents, 0);
+  const rev_cents = allJobs
+    .filter((j) => j.is_completed)
+    .reduce((s, j) => s + (j.price_cents ?? 0), 0);
+  const est_rev_cents = allJobs.reduce((s, j) => s + (j.price_cents ?? 0), 0);
+  const dir_actual = expenses
+    .filter((e) => e.cost_type === "direct" && e.value_type === "actual")
+    .reduce((s, e) => s + e.amount_cents, 0);
+  const dir_total = expenses
+    .filter((e) => e.cost_type === "direct")
+    .reduce((s, e) => s + e.amount_cents, 0);
+  const ind_actual = expenses
+    .filter((e) => e.cost_type === "indirect" && e.value_type === "actual")
+    .reduce((s, e) => s + e.amount_cents, 0);
+  const ind_total = expenses
+    .filter((e) => e.cost_type === "indirect")
+    .reduce((s, e) => s + e.amount_cents, 0);
 
   const profitability: ProjectProfitability = {
-    project_id:              project.id,
-    project_address:         project.project_address,
-    project_city:            project.project_city,
-    project_state:           project.project_state,
-    builder_name:            project.builder_name,
-    subdivision:             project.subdivision,
-    status:                  projStatus,
-    revenue_cents:           rev_cents,
+    project_id: project.id,
+    project_address: project.project_address,
+    project_city: project.project_city,
+    project_state: project.project_state,
+    builder_name: project.builder_name,
+    subdivision: project.subdivision,
+    status: projStatus,
+    revenue_cents: rev_cents,
     estimated_revenue_cents: est_rev_cents,
-    direct_actual_cents:     dir_actual,
-    direct_total_cents:      dir_total,
-    indirect_actual_cents:   ind_actual,
-    indirect_total_cents:    ind_total,
-    gross_profit_cents:      rev_cents - dir_actual,
-    net_profit_cents:        rev_cents - dir_actual - ind_actual,
-    est_gross_profit_cents:  est_rev_cents - dir_total,
-    est_net_profit_cents:    est_rev_cents - dir_total - ind_total,
+    direct_actual_cents: dir_actual,
+    direct_total_cents: dir_total,
+    indirect_actual_cents: ind_actual,
+    indirect_total_cents: ind_total,
+    gross_profit_cents: rev_cents - dir_actual,
+    net_profit_cents: rev_cents - dir_actual - ind_actual,
+    est_gross_profit_cents: est_rev_cents - dir_total,
+    est_net_profit_cents: est_rev_cents - dir_total - ind_total,
   };
 
   // invoice actions
@@ -223,7 +267,8 @@ export default async function ProjectDashboardPage({
     .reduce((sum, j) => sum + (j.price_cents ?? 0), 0);
   const pendingJobs = totalJobs - invoicedJobs;
   const totalExpenses = dir_total + ind_total;
-  const revenueForDisplay = projStatus === "completed" ? rev_cents : est_rev_cents;
+  const revenueForDisplay =
+    projStatus === "completed" ? rev_cents : est_rev_cents;
   const chartMax = Math.max(revenueForDisplay, totalExpenses, 1);
   const revenueBarPct = Math.round((revenueForDisplay / chartMax) * 100);
   const expensesBarPct = Math.round((totalExpenses / chartMax) * 100);
@@ -236,7 +281,9 @@ export default async function ProjectDashboardPage({
       ? profitability.net_profit_cents
       : profitability.est_net_profit_cents;
   const marginPct =
-    revenueForDisplay > 0 ? Math.round((netProfitForDisplay / revenueForDisplay) * 100) : 0;
+    revenueForDisplay > 0
+      ? Math.round((netProfitForDisplay / revenueForDisplay) * 100)
+      : 0;
   const projectStreetTitle = getProjectStreetTitle(project);
   const projectLocationSubtitle = getProjectLocationSubtitle(project);
   const mapboxToken = getPublicMapboxAccessToken();
@@ -252,13 +299,22 @@ export default async function ProjectDashboardPage({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{projectStreetTitle}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {projectStreetTitle}
+          </h1>
           <p className="text-sm text-muted-foreground">
-          Builder: {project.builder_name} • Subdivision: {project.subdivision}
-          {projectLocationSubtitle ? ` • Location: ${projectLocationSubtitle}` : ""}
+            Builder: {project.builder_name} • Subdivision: {project.subdivision}
+            {projectLocationSubtitle
+              ? ` • Location: ${projectLocationSubtitle}`
+              : ""}
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+          <EditProjectButton
+            project={project}
+            builders={builders}
+            subdivisions={subdivisions}
+          />
           <CreateInvoiceButton
             projectId={project.id}
             disabled={completedNotInvoiceCount === 0}
@@ -273,26 +329,26 @@ export default async function ProjectDashboardPage({
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard
-              label="Total Jobs"
-              value={String(totalJobs)}
-              meta={`${openJobs} open`}
-            />
-            <StatCard
-              label="Completed Jobs"
-              value={String(completedJobs)}
-              meta={`${completionPct}% complete`}
-            />
-            <StatCard
-              label="Total Project Value"
-              value={formatMoney(totalValue)}
-              meta="All project jobs"
-            />
-            <StatCard
-              label="Completed Value"
-              value={formatMoney(completedValue)}
-              meta="Completed work"
-            />
+        <StatCard
+          label="Total Jobs"
+          value={String(totalJobs)}
+          meta={`${openJobs} open`}
+        />
+        <StatCard
+          label="Completed Jobs"
+          value={String(completedJobs)}
+          meta={`${completionPct}% complete`}
+        />
+        <StatCard
+          label="Total Project Value"
+          value={formatMoney(totalValue)}
+          meta="All project jobs"
+        />
+        <StatCard
+          label="Completed Value"
+          value={formatMoney(completedValue)}
+          meta="Completed work"
+        />
       </div>
 
       <div className="order-2 grid gap-4 lg:order-none lg:grid-cols-2">
@@ -315,24 +371,47 @@ export default async function ProjectDashboardPage({
           <div className="grid grid-cols-2 gap-4">
             <div className="min-w-0 space-y-1">
               <div className="text-xs text-muted-foreground">Net Profit</div>
-              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">{formatMoney(netProfitForDisplay)}</div>
+              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">
+                {formatMoney(netProfitForDisplay)}
+              </div>
             </div>
             <div className="min-w-0 space-y-1">
               <div className="text-xs text-muted-foreground">Gross Profit</div>
-              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">{formatMoney(grossProfitForDisplay)}</div>
+              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">
+                {formatMoney(grossProfitForDisplay)}
+              </div>
             </div>
           </div>
 
           <div className="grid gap-x-6 gap-y-2 border-t pt-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <MetricRow label="Revenue" value={formatMoney(revenueForDisplay)} />
-              <MetricRow label="Direct Costs" value={formatMoney(dir_total)} muted={dir_total === 0} />
-              <MetricRow label="Indirect Costs" value={formatMoney(ind_total)} muted={ind_total === 0} />
+              <MetricRow
+                label="Revenue"
+                value={formatMoney(revenueForDisplay)}
+              />
+              <MetricRow
+                label="Direct Costs"
+                value={formatMoney(dir_total)}
+                muted={dir_total === 0}
+              />
+              <MetricRow
+                label="Indirect Costs"
+                value={formatMoney(ind_total)}
+                muted={ind_total === 0}
+              />
             </div>
             <div className="space-y-2">
               <MetricRow label="Net Margin" value={`${marginPct}%`} />
-              <MetricRow label="Completed" value={formatMoney(completedValue)} muted={completedValue === 0} />
-              <MetricRow label="Remaining" value={formatMoney(remainingValue)} muted={remainingValue === 0} />
+              <MetricRow
+                label="Completed"
+                value={formatMoney(completedValue)}
+                muted={completedValue === 0}
+              />
+              <MetricRow
+                label="Remaining"
+                value={formatMoney(remainingValue)}
+                muted={remainingValue === 0}
+              />
             </div>
           </div>
         </Card>
@@ -341,19 +420,37 @@ export default async function ProjectDashboardPage({
           <h2 className="text-sm font-semibold">Project Status</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="min-w-0 space-y-1">
-              <div className="text-xs text-muted-foreground">{invoicedJobs} Invoiced</div>
-              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">{formatMoney(invoicedValue)}</div>
+              <div className="text-xs text-muted-foreground">
+                {invoicedJobs} Invoiced
+              </div>
+              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">
+                {formatMoney(invoicedValue)}
+              </div>
             </div>
             <div className="min-w-0 space-y-1">
-              <div className="text-xs text-muted-foreground">Remaining to invoice</div>
-              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">{formatMoney(totalValue - invoicedValue)}</div>
+              <div className="text-xs text-muted-foreground">
+                Remaining to invoice
+              </div>
+              <div className="text-xl font-semibold tracking-tight tabular-nums break-words">
+                {formatMoney(totalValue - invoicedValue)}
+              </div>
             </div>
           </div>
 
           <div className="space-y-3 border-t pt-3">
             <div className="grid gap-3 sm:grid-cols-2 sm:gap-6">
-              <ComparisonBar label="Revenue" value={formatMoney(revenueForDisplay)} widthPct={revenueBarPct} tone="primary" />
-              <ComparisonBar label="Expenses" value={formatMoney(totalExpenses)} widthPct={expensesBarPct} tone="muted" />
+              <ComparisonBar
+                label="Revenue"
+                value={formatMoney(revenueForDisplay)}
+                widthPct={revenueBarPct}
+                tone="primary"
+              />
+              <ComparisonBar
+                label="Expenses"
+                value={formatMoney(totalExpenses)}
+                widthPct={expensesBarPct}
+                tone="muted"
+              />
             </div>
             <p className="text-xs text-muted-foreground">
               {pendingJobs} job{pendingJobs === 1 ? "" : "s"} still not invoiced
