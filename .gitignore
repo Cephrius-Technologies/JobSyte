@@ -53,5 +53,7 @@ create-sanitize-issue.sh
 .claude/skills/
 .codex
 JobSyte/.claude
-/supabase/
-
+/supabase/*
+!/supabase/migrations/
+/supabase/migrations/*
+!/supabase/migrations/20260907000000_create_invoice_for_builder_atomic.sql
