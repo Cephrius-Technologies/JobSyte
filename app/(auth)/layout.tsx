@@ -1,3 +1,4 @@
+import { Divide } from "lucide-react";
 import type { Metadata } from "next";
 
 // Keep account flows out of search results.
@@ -19,5 +20,21 @@ export default function AuthLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return children;
+  return (
+    <div className="auth-workspace">
+      <aside className="auth-intro">
+        <div className="text-xl font-semibold tracking-tight">
+          JobSyte<span className="text-orange-400">.</span>
+        </div>
+        <div className="space-y-6">
+          <h1>Great work starts here</h1>
+          <p>
+            From the first job to the final invoice. One organized workspace for your projects, your poeople and everything in between.
+          </p>
+        </div>
+        <p className="text-sm">Built for the way your team works.</p>
+      </aside>
+      <div className="auth-content">{children}</div>
+    </div>
+  );
 }

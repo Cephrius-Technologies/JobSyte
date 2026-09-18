@@ -183,6 +183,50 @@
   }
 }
 
+.auth-workspace {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  padding: 1.5rem;
+  gap: 1.5rem;
+}
+.auth-intro {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3rem;
+  padding: clamp(2rem, 5vw, 5rem);
+  border-radius: 2rem;
+  background: black;
+  color: var(--primary-foreground);
+}
+.auth-intro h1 {
+  max-width: 12ch;
+  font-size: clamp(2.5rem, 4.5vw, 5rem);
+  font-weight: 550;
+  letter-spacing: -0.055em;
+  line-height: 1.06;
+}
+.auth-intro p {
+  max-width: 34rem;
+  line-height: 1.75;
+  opacity: 0.75;
+}
+.auth-content {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+.auth-content > div {
+  width: 100%;
+  min-height: auto;
+  background: transparent;
+}
+.auth-content [data-slot="card"] {
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
 @media print {
   @page {
     margin: 0.4in;
