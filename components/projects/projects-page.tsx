@@ -42,6 +42,7 @@ import { ImportProjectJobsButton } from "@/components/projects/import-project-jo
 import { NewProjectButton } from "@/components/projects/new-project-button";
 import {
   getProjectLocationSubtitle,
+  getProjectStreetGroupLabel,
   getProjectStreetTitle,
 } from "@/components/projects/project-location";
 import type {
@@ -79,6 +80,7 @@ import {
 import { cn } from "@/lib/utils";
 import { DeleteProjectButton } from "./delete-project-button";
 import { EditProjectDialog } from "./edit-project-dialog";
+import { BuilderGroupActionsMenu } from "./builder-group-actions-menu";
 import { SubdivisionGroupActionsMenu } from "./subdivision-group-actions-menu";
 import { StreetGroupActionsMenu } from "./street-group-actions-menu";
 
@@ -193,16 +195,31 @@ function serializeStoredKeys(value: string[] | null) {
   return value === null ? null : JSON.stringify(value);
 }
 
-function getStreetFolderLabel(projectAddress: string): string {
-  const normalized = (projectAddress.split(",")[0] ?? "")
-    .trim()
-    .replace(/\s+/g, " ");
-  if (!normalized) return "Unassigned Street";
+function getProjectGroupKeys(project: ProjectListItem) {
+  const subdivisionLabel =
+    project.subdivision?.trim() || "Unassigned Subdivision";
+  const subdivisionKey =
+    project.subdivision_id ??
+    (project.subdivision?.trim()
+      ? `subdivision:${subdivisionLabel.toLowerCase()}`
+      : UNASSIGNED_SUBDIVISION);
+  const builderLabel = project.builder_name?.trim() || "Unassigned Builder";
+  const builderKey = `${subdivisionKey}::${
+    project.builder_id ??
+    (project.builder_name?.trim()
+      ? `builder:${builderLabel.toLowerCase()}`
+      : UNASSIGNED_BUILDER)
+  }`;
+  const streetLabel = getProjectStreetGroupLabel(project.project_address);
 
-  const match = normalized.match(/^\d+\s+(.+)$/);
-  if (match?.[1]) return match[1].trim();
-
-  return normalized;
+  return {
+    subdivisionLabel,
+    subdivisionKey,
+    builderLabel,
+    builderKey,
+    streetLabel,
+    streetKey: `${builderKey}::${streetLabel.toLowerCase()}`,
+  };
 }
 
 function ProjectCardActionsDropdown({
@@ -525,22 +542,14 @@ export function ProjectsPageClient({
     >();
 
     for (const project of filteredProjects) {
-      const subdivisionLabel =
-        project.subdivision?.trim() || "Unassigned Subdivision";
-      const subdivisionKey =
-        project.subdivision_id ??
-        (project.subdivision?.trim()
-          ? `subdivision:${subdivisionLabel.toLowerCase()}`
-          : UNASSIGNED_SUBDIVISION);
-      const builderLabel = project.builder_name?.trim() || "Unassigned Builder";
-      const builderKey = `${subdivisionKey}::${
-        project.builder_id ??
-        (project.builder_name?.trim()
-          ? `builder:${builderLabel.toLowerCase()}`
-          : UNASSIGNED_BUILDER)
-      }`;
-      const streetLabel = getStreetFolderLabel(project.project_address);
-      const streetKey = `${builderKey}::${streetLabel.toLowerCase()}`;
+      const {
+        subdivisionLabel,
+        subdivisionKey,
+        builderLabel,
+        builderKey,
+        streetLabel,
+        streetKey,
+      } = getProjectGroupKeys(project);
 
       const subdivisionGroup = subdivisionMap.get(subdivisionKey) ?? {
         key: subdivisionKey,
@@ -638,6 +647,20 @@ export function ProjectsPageClient({
       })
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [filteredProjects]);
+
+  const allProjectIdsByStreet = useMemo(() => {
+    const idsByStreet = new Map<string, string[]>();
+
+    for (const project of projects) {
+      const { streetKey } = getProjectGroupKeys(project);
+      idsByStreet.set(streetKey, [
+        ...(idsByStreet.get(streetKey) ?? []),
+        project.id,
+      ]);
+    }
+
+    return idsByStreet;
+  }, [projects]);
 
   const effectiveExpandedSubdivisions = useMemo(() => {
     const subdivisionKeys = new Set(groupedProjects.map((group) => group.key));
@@ -999,31 +1022,42 @@ export function ProjectsPageClient({
 
                           return (
                             <div key={builderGroup.key} className="space-y-2">
-                              <button
-                                type="button"
-                                className="flex w-full flex-col items-start gap-2 rounded-md border bg-muted/30 p-3 text-left transition-colors hover:bg-muted/50 dark:bg-card/60 dark:hover:bg-card/90 cursor-pointer sm:flex-row sm:items-center sm:justify-between"
-                                onClick={() => toggleBuilder(builderGroup.key)}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <ChevronDown
-                                    className={cn(
-                                      "size-4 shrink-0 transition-transform cursor-pointer",
-                                      isBuilderExpanded && "rotate-180",
-                                    )}
-                                  />
-                                  <div className="font-medium">
-                                    {builderGroup.label}
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                                <button
+                                  type="button"
+                                  className="flex flex-1 flex-col items-start gap-2 rounded-md border bg-muted/30 p-3 text-left transition-colors hover:bg-muted/50 dark:bg-card/60 dark:hover:bg-card/90 cursor-pointer sm:flex-row sm:items-center sm:justify-between"
+                                  onClick={() => toggleBuilder(builderGroup.key)}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <ChevronDown
+                                      className={cn(
+                                        "size-4 shrink-0 transition-transform cursor-pointer",
+                                        isBuilderExpanded && "rotate-180",
+                                      )}
+                                    />
+                                    <div className="font-medium">
+                                      {builderGroup.label}
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="text-xs text-muted-foreground sm:text-right">
-                                  {builderGroup.projectCount}{" "}
-                                  {builderGroup.projectCount === 1
-                                    ? "project"
-                                    : "projects"}{" "}
-                                  • {builderGroup.totalJobCount} jobs •{" "}
-                                  {builderGroup.openJobCount} open
-                                </div>
-                              </button>
+                                  <div className="text-xs text-muted-foreground sm:text-right">
+                                    {builderGroup.projectCount}{" "}
+                                    {builderGroup.projectCount === 1
+                                      ? "project"
+                                      : "projects"}{" "}
+                                    • {builderGroup.totalJobCount} jobs •{" "}
+                                    {builderGroup.openJobCount} open
+                                  </div>
+                                </button>
+                                <BuilderGroupActionsMenu
+                                  builders={builders}
+                                  subdivisions={subdivisions}
+                                  builderId={builderGroup.builder_id ?? undefined}
+                                  subdivisionId={
+                                    subdivisionGroup.subdivision_id ?? undefined
+                                  }
+                                  builderLabel={builderGroup.label}
+                                />
+                              </div>
 
                               {/* User viewing after builder selection */}
                               {isBuilderExpanded && (
@@ -1081,9 +1115,14 @@ export function ProjectsPageClient({
                                             }
                                             streetAddress={streetGroup.label}
                                             streetLabel={streetGroup.label}
-                                            projectIds={streetGroup.projects.map(
-                                              (project) => project.id,
-                                            )}
+                                            projectIds={
+                                              allProjectIdsByStreet.get(
+                                                streetGroup.key,
+                                              ) ??
+                                              streetGroup.projects.map(
+                                                (project) => project.id,
+                                              )
+                                            }
                                           />
                                         </div>
 

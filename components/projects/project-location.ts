@@ -8,6 +8,12 @@ function normalizeWhitespace(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
 
+function toTitleCase(value: string) {
+  return normalizeWhitespace(value).replace(/[A-Za-z]+/g, (segment) => {
+    return segment[0].toUpperCase() + segment.slice(1).toLowerCase();
+  });
+}
+
 function getAddressParts(projectAddress: string) {
   const [street = "", city = "", stateAndZip = ""] = projectAddress
     .split(",")
@@ -23,6 +29,31 @@ function getAddressParts(projectAddress: string) {
 
 export function getProjectStreetTitle(project: ProjectLocationFields) {
   return getAddressParts(project.project_address).street;
+}
+
+export function getProjectStreetGroupLabel(projectAddress: string) {
+  const street = getAddressParts(projectAddress).street;
+  if (!street) return "Unassigned Street";
+
+  return street.replace(/^\d+\s+/, "").trim() || street;
+}
+
+export function renameProjectStreetAddress(
+  projectAddress: string,
+  nextStreetAddress: string,
+) {
+  const normalizedStreet = toTitleCase(nextStreetAddress);
+  if (!normalizedStreet) return null;
+
+  const [streetLine = "", ...locationParts] = projectAddress
+    .split(",")
+    .map((part) => normalizeWhitespace(part));
+  const houseNumber = streetLine.match(/^(\d+)\s+.+$/)?.[1];
+  if (!houseNumber) return null;
+
+  return [`${houseNumber} ${normalizedStreet}`, ...locationParts]
+    .filter(Boolean)
+    .join(", ");
 }
 
 export function getProjectLocationSubtitle(project: ProjectLocationFields) {
