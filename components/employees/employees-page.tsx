@@ -565,7 +565,7 @@ export function EmployeesPageClient({
       </div>
 
       {/* Two-column grid — left column stacks roster + crews, right column is analytics */}
-      <div className="grid grid-cols-1 gap-4 lg:h-[calc(100vh-26rem)] lg:grid-cols-[3fr_2fr]">
+      <div className="grid grid-cols-1 gap-4 xl:h-[calc(100vh-26rem)] xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {/* Left column: Employee Roster on top, Crew Overview below */}
         <div className="flex min-h-0 flex-col gap-4">
           <Card className="flex shrink-0 flex-col overflow-hidden shadow-none max-h-[55vh]">
@@ -775,7 +775,7 @@ export function EmployeesPageClient({
           </Card>
 
           {/* Crew Overview */}
-          <Card className="flex flex-1 min-h-0 flex-col overflow-hidden shadow-none max-h-[70vh] lg:max-h-none">
+          <Card className="flex flex-1 min-h-0 flex-col overflow-hidden shadow-none max-h-[70vh] xl:max-h-none">
             <div className="shrink-0 border-b p-4">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-3">

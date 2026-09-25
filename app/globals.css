@@ -159,6 +159,16 @@
   }
 }
 
+.calendar-workspace {
+  container-type: inline-size;
+}
+
+@container (min-width: 900px) {
+  .calendar-workspace-layout {
+    grid-template-columns: minmax(0, 34rem) minmax(0, 1fr);
+  }
+}
+
 /* Keep controls readable without shrinking spacing or touch targets. */
 @media (max-width: 639px) {
   /* Prevent iOS auto-zoom on input focus while keeping visual size small */
