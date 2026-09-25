@@ -64,8 +64,9 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
   --primary: #4338ca;
+  --orangeButton: #ff3700;
   --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.967 0.001 286.375);
+  --secondary: oklch(8.597% 0.00556 285.155);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
   --muted-foreground: #626875;
@@ -108,6 +109,7 @@
   --popover: #191c23;
   --popover-foreground: oklch(0.985 0 0);
   --primary: #a5b4fc;
+  --orangeButton: #ff6f00;
   --primary-foreground: #171b35;
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
@@ -157,6 +159,16 @@
   }
 }
 
+.calendar-workspace {
+  container-type: inline-size;
+}
+
+@container (min-width: 900px) {
+  .calendar-workspace-layout {
+    grid-template-columns: minmax(0, 34rem) minmax(0, 1fr);
+  }
+}
+
 /* Keep controls readable without shrinking spacing or touch targets. */
 @media (max-width: 639px) {
   /* Prevent iOS auto-zoom on input focus while keeping visual size small */
@@ -181,6 +193,50 @@
   [data-app-shell-main] {
     padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
   }
+}
+
+.auth-workspace {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  padding: 1.5rem;
+  gap: 1.5rem;
+}
+.auth-intro {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3rem;
+  padding: clamp(2rem, 5vw, 5rem);
+  border-radius: 2rem;
+  background: black;
+  color: var(--primary-foreground);
+}
+.auth-intro h1 {
+  max-width: 12ch;
+  font-size: clamp(2.5rem, 4.5vw, 5rem);
+  font-weight: 550;
+  letter-spacing: -0.055em;
+  line-height: 1.06;
+}
+.auth-intro p {
+  max-width: 34rem;
+  line-height: 1.75;
+  opacity: 0.75;
+}
+.auth-content {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+.auth-content > div {
+  width: 100%;
+  min-height: auto;
+  background: transparent;
+}
+.auth-content [data-slot="card"] {
+  padding: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 .auth-workspace {

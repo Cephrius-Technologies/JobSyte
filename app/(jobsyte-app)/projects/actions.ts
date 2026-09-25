@@ -6,6 +6,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCompanyId } from "@/lib/active-company";
 import { revalidatePath } from "next/cache";
+import {
+  getProjectStreetGroupLabel,
+  renameProjectStreetAddress,
+} from "@/components/projects/project-location";
 
 type IdName = { id: string; name: string };
 type ProjectPresetJobInput = {
@@ -1213,6 +1217,96 @@ export async function deleteProjects(projectIds: string[]) {
   revalidatePath("/invoices");
   revalidatePath("/accounting");
   return { ok: true, deletedCount: ownedIds.length };
+}
+
+export async function renameProjectStreetGroup(
+  projectIds: string[],
+  streetAddressRaw: string,
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { ok: false, message: "Session expired. Please log in again." };
+  }
+
+  const companyId = await getActiveCompanyId();
+  if (!companyId) return { ok: false, message: "No active company found." };
+
+  const ids = Array.from(
+    new Set(
+      (projectIds ?? [])
+        .map((id) => (typeof id === "string" ? id.trim() : ""))
+        .filter(Boolean),
+    ),
+  );
+  if (ids.length === 0) {
+    return { ok: false, message: "No projects selected." };
+  }
+
+  const { data: projects, error: projectsError } = await supabase
+    .from("projects")
+    .select("id, project_address")
+    .in("id", ids)
+    .eq("company_id", companyId)
+    .is("deleted_at", null);
+
+  if (projectsError) {
+    return { ok: false, message: "Failed to load street projects." };
+  }
+  if ((projects ?? []).length !== ids.length) {
+    return {
+      ok: false,
+      message: "One or more projects in this street could not be found.",
+    };
+  }
+
+  const streetGroups = new Set(
+    (projects ?? []).map((project) =>
+      getProjectStreetGroupLabel(String(project.project_address)).toLowerCase(),
+    ),
+  );
+  if (streetGroups.size !== 1) {
+    return { ok: false, message: "The selected projects are not in one street." };
+  }
+
+  const updates = (projects ?? []).map((project) => ({
+    id: String(project.id),
+    project_address: renameProjectStreetAddress(
+      String(project.project_address),
+      streetAddressRaw,
+    ),
+  }));
+  if (updates.some((project) => !project.project_address)) {
+    return {
+      ok: false,
+      message: "Every project needs a numeric street number before this street can be renamed.",
+    };
+  }
+
+  const updateResults = await Promise.all(
+    updates.map((project) =>
+      supabase
+        .from("projects")
+        .update({ project_address: project.project_address as string })
+        .eq("id", project.id)
+        .eq("company_id", companyId)
+        .is("deleted_at", null),
+    ),
+  );
+  if (updateResults.some((result) => result.error)) {
+    return { ok: false, message: "Failed to update every project address." };
+  }
+
+  revalidatePath("/projects");
+  revalidatePath("/dashboard");
+  revalidatePath("/accounting");
+  revalidatePath("/calendar");
+  revalidatePath("/map");
+  return { ok: true, updatedCount: updates.length };
 }
 
 export async function editProject(formData: FormData) {

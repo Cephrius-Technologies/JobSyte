@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { deleteProjects } from "@/app/(jobsyte-app)/projects/actions";
+import {
+  deleteProjects,
+  renameProjectStreetGroup,
+} from "@/app/(jobsyte-app)/projects/actions";
 import { NewProjectDialog } from "@/components/projects/new-project-dialog";
 import type { LookupItem } from "@/components/projects/types";
 import {
@@ -19,11 +22,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 
 type StreetGroupActionsMenuProps = {
   builders: LookupItem[];
@@ -46,11 +58,34 @@ export function StreetGroupActionsMenu({
 }: StreetGroupActionsMenuProps) {
   const router = useRouter();
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [streetName, setStreetName] = useState(streetAddress);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const count = projectIds.length;
   const projectWord = count === 1 ? "project" : "projects";
+
+  async function onRenameStreet() {
+    if (!streetName.trim() || count === 0) return;
+
+    setIsRenaming(true);
+    const result = await renameProjectStreetGroup(projectIds, streetName);
+
+    if (!result.ok) {
+      toast.error(result.message ?? "Failed to rename street.");
+      setIsRenaming(false);
+      return;
+    }
+
+    toast.success(
+      `Updated ${result.updatedCount} ${result.updatedCount === 1 ? "address" : "addresses"}.`,
+    );
+    setEditOpen(false);
+    setIsRenaming(false);
+    router.refresh();
+  }
 
   async function onDeleteStreet() {
     if (count === 0) return;
@@ -109,6 +144,17 @@ export function StreetGroupActionsMenu({
             New Project
           </DropdownMenuItem>
           <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={(event) => {
+              event.preventDefault();
+              setStreetName(streetAddress);
+              setEditOpen(true);
+            }}
+          >
+            <Pencil className="size-4" />
+            Edit Street
+          </DropdownMenuItem>
+          <DropdownMenuItem
             className="cursor-pointer text-destructive focus:text-destructive"
             onSelect={(event) => {
               event.preventDefault();
@@ -130,6 +176,54 @@ export function StreetGroupActionsMenu({
         initialSubdivisionId={subdivisionId}
         initialStreetAddress={streetAddress}
       />
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent onClick={(event) => event.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Edit street</DialogTitle>
+            <DialogDescription>
+              Rename {streetLabel} across all {count} {projectWord}. Each
+              project keeps its current street number.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void onRenameStreet();
+            }}
+          >
+            <div className="space-y-2">
+              <label htmlFor={`edit-street-${projectIds[0] ?? "group"}`} className="text-sm font-medium">
+                Street name
+              </label>
+              <Input
+                id={`edit-street-${projectIds[0] ?? "group"}`}
+                value={streetName}
+                onChange={(event) => setStreetName(event.target.value)}
+                placeholder="Main Street"
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isRenaming}
+                onClick={() => setEditOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!streetName.trim() || isRenaming}
+              >
+                {isRenaming ? "Updating..." : `Update ${projectWord}`}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* The delete flow still deletes the exact project ids from this street grouping;
           moving it into a menu changes the entry point, not the deletion scope. */}

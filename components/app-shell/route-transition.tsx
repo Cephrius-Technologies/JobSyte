@@ -16,7 +16,7 @@ export function RouteTransition({
     <div
       key={pathname}
       className={cn(
-        "mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col",
+        "mx-auto flex w-full max-w-[2560px] min-h-0 min-w-0 flex-1 flex-col",
         className,
       )}
     >

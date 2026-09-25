@@ -155,9 +155,12 @@ function CalendarJobDayButton({
         {format(day.date, "d")}
       </span>
       {jobCount > 0 ? (
-        <span className="mt-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary">
-          {jobCount}
-        </span>
+        <>
+          <span className="mt-1 size-1.5 rounded-full bg-primary min-[360px]:hidden" aria-hidden="true" />
+          <span className="mt-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary max-[359px]:sr-only">
+            {jobCount}<span className="sr-only"> jobs</span>
+          </span>
+        </>
       ) : null}
     </CalendarDayButton>
   );
@@ -1021,7 +1024,7 @@ export function JobsCalendarPageClient({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(18rem,21rem)] 2xl:grid-cols-[minmax(0,1.9fr)_minmax(20rem,24rem)]">
-        <Card className="overflow-hidden">
+        <Card className="calendar-workspace min-w-0 overflow-hidden">
           <div className="border-b p-3 sm:p-4">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
               <div>
@@ -1039,7 +1042,7 @@ export function JobsCalendarPageClient({
 
           {/* Keep the calendar column wide enough for readable custom date
               cells, then let the jobs pane take the remaining flexible space. */}
-          <div className="grid min-w-0 items-start gap-4 p-3 sm:p-4 xl:grid-cols-[34rem_minmax(0,1fr)]">
+          <div className="calendar-workspace-layout grid min-w-0 items-start gap-4 p-3 sm:p-4">
             <div className="min-w-0 space-y-4">
               <div className="w-full overflow-hidden rounded-xl border border-border/80 bg-muted/20 p-2 sm:p-3">
                 {/* Keep the navigation and grid constrained to the same width so
@@ -1070,7 +1073,7 @@ export function JobsCalendarPageClient({
                   </Button>
                 </div>
                 <Calendar
-                  className="mx-auto w-full max-w-[32rem] rounded-xl bg-background p-2 [--cell-size:2.75rem] sm:[--cell-size:3.1rem] xl:[--cell-size:3.45rem] sm:p-3"
+                  className="mx-auto w-full max-w-[32rem] rounded-xl bg-background p-2 [--cell-size:clamp(1.75rem,calc((100vw-7rem)/7),2.75rem)] sm:[--cell-size:3.1rem] xl:[--cell-size:3.45rem] sm:p-3"
                   buttonVariant="ghost"
                   mode="single"
                   month={visibleMonth}

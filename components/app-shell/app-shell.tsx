@@ -20,7 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="min-w-0 flex-1 flex flex-col md:h-dvh">
               <Header />
               <MainView>
-                <main id="main-content" data-app-shell-main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-6 lg:p-8">
+                <main id="main-content" data-app-shell-main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-6 lg:p-8 2xl:px-10">
                   <RouteTransition>{children}</RouteTransition>
                 </main>
               </MainView>
