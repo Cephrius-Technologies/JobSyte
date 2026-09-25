@@ -69,7 +69,7 @@ export default async function InvoiceViewPage({
   }
 
   return (
-    <div id="invoice-print-root" className="mx-auto w-full max-w-5xl space-y-6 print:space-y-0">
+    <div id="invoice-print-root" className="mx-auto w-full min-w-0 max-w-[1920px] space-y-6 print:max-w-none print:space-y-0">
       <div className="print:hidden">
         <BreadcrumbSetter
           crumbs={[

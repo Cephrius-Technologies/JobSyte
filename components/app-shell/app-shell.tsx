@@ -13,11 +13,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <BreadcrumbProvider>
       <SidebarStateProvider>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background md:h-dvh md:overflow-hidden">
           <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-card focus:p-3 focus:ring-2 focus:ring-ring">Skip to content</a>
-          <div className="flex">
+          <div className="flex md:h-full md:min-h-0">
             <Sidebar />
-            <div className="min-w-0 flex-1 flex flex-col md:h-dvh">
+            <div className="min-w-0 flex-1 flex flex-col md:h-full md:min-h-0 md:overflow-hidden">
               <Header />
               <MainView>
                 <main id="main-content" data-app-shell-main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-6 lg:p-8 2xl:px-10">

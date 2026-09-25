@@ -444,15 +444,15 @@ export function CreateInvoiceByBuilder({
 
   return (
     <form
-      className="space-y-6 pb-36 md:pb-0"
+      className="space-y-6 pb-36 md:pb-0 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain xl:flex xl:flex-col xl:overflow-hidden"
       onSubmit={(event) => {
         event.preventDefault();
         if (isPending || !canSubmit) return;
         submit();
       }}
     >
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="min-w-0 space-y-6">
+      <div className="grid gap-6 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0 space-y-6 xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:pb-6 xl:pr-2">
           <Card className="space-y-3 p-4 sm:p-5">
             <div className="space-y-1">
               <div className="text-sm font-semibold">Builder</div>
@@ -753,7 +753,7 @@ export function CreateInvoiceByBuilder({
               </div>
             ) : (
               <div className="overflow-hidden rounded-md border">
-                <div className="max-h-96 overflow-auto">
+                <div className="max-h-[min(24rem,45dvh)] overflow-y-auto overscroll-contain">
                   {filteredJobs.map((job) => (
                     <label
                       key={job.id}
@@ -793,7 +793,7 @@ export function CreateInvoiceByBuilder({
           </Card>
         </div>
 
-        <Card className="h-fit space-y-4 p-4 sm:p-5 xl:sticky xl:top-4">
+        <Card className="h-fit max-h-full space-y-4 overflow-y-auto p-4 sm:p-5">
           <div className="space-y-1">
             <div className="text-sm font-semibold">Invoice Summary</div>
             <p className="text-xs text-muted-foreground">
@@ -840,6 +840,8 @@ export function CreateInvoiceByBuilder({
             </div>
           </div>
 
+          {error && <p role="alert" className="hidden text-sm text-destructive xl:block">{error}</p>}
+
           <div className="hidden flex-col gap-2 xl:flex">
             <Button
               type="button"
@@ -856,7 +858,7 @@ export function CreateInvoiceByBuilder({
         </Card>
       </div>
 
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive xl:hidden">{error}</p>}
 
       <div className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-2 gap-2 border-t bg-card px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] md:static md:flex md:justify-end md:border-0 md:bg-transparent md:p-0 xl:hidden">
         <div aria-live="polite" className="col-span-2 mb-1 flex justify-between text-sm md:hidden"><span className="text-muted-foreground">Subtotal · {selectedJobsCount} jobs</span><span className="font-semibold tabular-nums">{money(subtotal)}</span></div>

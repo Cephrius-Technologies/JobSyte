@@ -33,7 +33,7 @@ export default async function NewInvoicePage() {
   const company = companyRes.data;
 
   return (
-    <div className="space-y-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-6 lg:overflow-hidden">
       <BreadcrumbSetter
         crumbs={[
           { label: "Invoices", href: "/invoices" },
@@ -41,9 +41,9 @@ export default async function NewInvoicePage() {
         ]}
       />
 
-      <PageHeader title="New Invoice" description="Select a builder, then choose completed jobs across their projects." />
+      <PageHeader title="New Invoice" description="Select a builder, then choose completed jobs across their projects." className="shrink-0" />
 
-      <div>
+      <div className="min-h-0 flex-1">
         <CreateInvoiceByBuilder
           builders={buildersRes.data ?? []}
           defaultDueDays={settings.default_due_days}
