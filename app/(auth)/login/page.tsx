@@ -26,7 +26,7 @@ export default function LoginPage() {
     if (match?.[2] === "1") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowVerified(true);
-      fetch("/api/auth/verified/clear", { method: "POST" }).catch(() => {});
+      fetch("/api/auth/verified/clear", { method: "POST" }).catch(() => { });
     }
   }, []);
 
@@ -46,9 +46,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-background px-4 py-10">
+    <div className="min-h-dvh flex items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md gap-6 p-6 sm:p-8">
-        <div className="text-sm font-semibold tracking-tight text-primary">JobSyte<span className="ml-2 font-normal text-muted-foreground">/ Contractor workspace</span></div>
+        <div className="text-sm font-semibold tracking-tight">JobSyte<span className="text-2xl text-orange-500">.</span><span className="ml-2 font-normal text-muted-foreground">| Contractor workspace</span></div>
         {showVerified && (
           <div className="mb-4 rounded-md border border-transparent bg-success-muted px-3 py-2 text-sm text-success">
             Account verified. Please sign in.
@@ -80,7 +80,7 @@ export default function LoginPage() {
           </div>
 
           <Button
-            className="w-full"
+            className="w-full bg-(--orangeButton) text-white hover:bg-[#e66300]"
             disabled={loading || !email || !password}
             onClick={handlePasswordLogin}
           >
