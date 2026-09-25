@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { SidebarNav } from "./sidebar-nav";
 import { CompanySwitcher } from "./company-switcher";
+import { SidebarBrand } from "./sidebar-brand";
 import { VersionChangelogDialog } from "./version-changelog-dialog";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,7 @@ export function MobileSidebar() {
           <SheetDescription className="sr-only">
             Jump to any section of JobSyte.
           </SheetDescription>
+          <SidebarBrand />
           <CompanySwitcher />
         </SheetHeader>
 

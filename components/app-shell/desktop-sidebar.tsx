@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useSidebarState } from "./sidebar-state";
 import { VersionChangelogDialog } from "./version-changelog-dialog";
 import { CompanySwitcher } from "./company-switcher";
+import { SidebarBrand } from "./sidebar-brand";
 import { useCompany } from "@/lib/company-context";
 import {
   Popover,
@@ -36,7 +37,9 @@ export function DesktopSidebar() {
         collapsed ? "md:w-[72px]" : "md:w-60",
       )}
     >
-      {!collapsed && <div className="px-5 pt-5 text-sm font-semibold tracking-tight">JobSyte</div>}
+      <div className={cn("flex justify-center px-4 pt-4", collapsed && "px-3")}>
+        <SidebarBrand compact={collapsed} />
+      </div>
       <div
         className={cn(
           "flex items-center p-3",
