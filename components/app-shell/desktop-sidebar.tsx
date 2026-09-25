@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { SidebarNav } from "./sidebar-nav";
 import { cn } from "@/lib/utils";
@@ -8,27 +7,9 @@ import { useSidebarState } from "./sidebar-state";
 import { VersionChangelogDialog } from "./version-changelog-dialog";
 import { CompanySwitcher } from "./company-switcher";
 import { SidebarBrand } from "./sidebar-brand";
-import { useCompany } from "@/lib/company-context";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-
-function companyInitials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 export function DesktopSidebar() {
   const { collapsed } = useSidebarState();
-  const { activeCompany } = useCompany();
-  const initials = companyInitials(activeCompany?.name ?? "");
 
   return (
     <aside
@@ -37,51 +18,17 @@ export function DesktopSidebar() {
         collapsed ? "md:w-[72px]" : "md:w-60",
       )}
     >
-      <div className={cn("flex justify-center px-4 pt-4", collapsed && "px-3")}>
-        <SidebarBrand compact={collapsed} />
-      </div>
-      <div
-        className={cn(
-          "flex items-center p-3",
-          collapsed ? "justify-center" : "justify-between",
+      <div className={cn("px-3 pb-3 pt-4", collapsed && "px-2 pb-2 pt-3")}>
+        <div className={cn("flex justify-start px-2", collapsed && "justify-center px-0")}>
+          <SidebarBrand compact={collapsed} />
+        </div>
+        {!collapsed && (
+          <p className="mb-1.5 mt-3 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Current company
+          </p>
         )}
-      >
-        <div className={cn("min-w-0 flex-1 p-2", collapsed && "text-center")}>
-          {collapsed ? (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="flex items-center justify-center rounded-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-                  aria-label={`Switch company — ${activeCompany?.name}`}
-                >
-                  {activeCompany?.logo_url ? (
-                    <Image
-                      src={activeCompany.logo_url}
-                      alt={activeCompany.name}
-                      width={36}
-                      height={36}
-                      className="size-9 rounded-lg object-contain"
-                    />
-                  ) : (
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold">
-                      {initials || "JS"}
-                    </div>
-                  )}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                side="right"
-                align="start"
-                sideOffset={12}
-                className="w-72 p-0"
-              >
-                <CompanySwitcher />
-              </PopoverContent>
-            </Popover>
-          ) : (
-            <CompanySwitcher />
-          )}
+        <div className={cn(collapsed && "mt-3 flex justify-center")}>
+          <CompanySwitcher compact={collapsed} />
         </div>
       </div>
 

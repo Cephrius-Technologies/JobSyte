@@ -9,7 +9,7 @@ export function SidebarBrand({ compact = false }: { compact?: boolean }) {
       aria-label="JobSyte dashboard"
       className={cn(
         "flex shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        compact ? "size-10" : "h-16 w-full",
+        compact ? "size-10" : "h-11 w-full justify-start",
       )}
     >
       {compact ? (
@@ -21,14 +21,14 @@ export function SidebarBrand({ compact = false }: { compact?: boolean }) {
             alt=""
             width={704}
             height={230}
-            className="h-14 w-auto max-w-full object-contain dark:hidden"
+            className="h-10 w-auto max-w-full object-contain dark:hidden"
           />
           <Image
             src="/jobsyte-wordmark-white-on-dark.png"
             alt=""
             width={704}
             height={230}
-            className="hidden h-14 w-auto max-w-full object-contain dark:block"
+            className="hidden h-10 w-auto max-w-full object-contain dark:block"
           />
         </>
       )}
