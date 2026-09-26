@@ -1010,7 +1010,7 @@ export function JobsCalendarPageClient({
 
           <Button
             type="button"
-            variant="outline"
+            variant="default"
             onClick={() => {
               setVisibleMonth(calendarBounds.currentMonth);
               setSelectedDateKey(todayKey);
