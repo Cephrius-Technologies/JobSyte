@@ -156,6 +156,9 @@ export async function toggleJobComplete(jobId: string, nextCompleted: boolean) {
 
   if (userError || !user) redirect("/login");
 
+  const companyId = await getActiveCompanyId();
+  if (!companyId) return { ok: false, message: "No active company found." };
+
   const { data, error } = await supabase
     .from("jobs")
     .update({
@@ -163,6 +166,7 @@ export async function toggleJobComplete(jobId: string, nextCompleted: boolean) {
       completed_at: nextCompleted ? new Date().toISOString() : null,
     })
     .eq("id", jobId)
+    .eq("company_id", companyId)
     .is("deleted_at", null)
     .select("project_id")
     .maybeSingle();
@@ -184,6 +188,9 @@ export async function editJob(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) redirect("/login");
+
+  const companyId = await getActiveCompanyId();
+  if (!companyId) return { ok: false, message: "No active company found." };
 
   const jobId = String(formData.get("job_id") || "").trim();
   const title = toTitleCase(String(formData.get("title") || ""));
@@ -218,7 +225,7 @@ export async function editJob(formData: FormData) {
   if (price_cents === null)
     return { ok: false, message: "Enter a valid price." };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("jobs")
     .update({
       title,
@@ -231,9 +238,13 @@ export async function editJob(formData: FormData) {
       completed_by_name: completedByName,
     })
     .eq("id", jobId)
-    .is("deleted_at", null);
+    .eq("company_id", companyId)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
 
   if (error) return { ok: false, message: error.message };
+  if (!data) return { ok: false, message: "Job not found." };
   return { ok: true };
 }
 
@@ -246,10 +257,14 @@ export async function deleteJob(jobId: string) {
 
   if (userError || !user) redirect("/login");
 
+  const companyId = await getActiveCompanyId();
+  if (!companyId) return { ok: false, message: "No active company found." };
+
   const { data, error } = await supabase
     .from("jobs")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", jobId)
+    .eq("company_id", companyId)
     .is("deleted_at", null)
     .select("id, project_id")
     .maybeSingle();
