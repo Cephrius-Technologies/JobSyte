@@ -83,6 +83,8 @@ import { EditProjectDialog } from "./edit-project-dialog";
 import { BuilderGroupActionsMenu } from "./builder-group-actions-menu";
 import { SubdivisionGroupActionsMenu } from "./subdivision-group-actions-menu";
 import { StreetGroupActionsMenu } from "./street-group-actions-menu";
+import { ProjectSortHeader } from "./project-sort-header";
+import { nextProjectSort, sortProjects, type ProjectSort } from "./project-sort";
 
 import { parseProjectsView, PROJECTS_VIEW_STORAGE_KEY, type ProjectsView as ViewMode } from "./projects-view";
 const PROJECTS_SELECTED_STORAGE_KEY = "projects:selected-project-id";
@@ -359,6 +361,7 @@ export function ProjectsPageClient({
   const [builderFilter, setBuilderFilter] = useState("all");
   const [subdivisionFilter, setSubdivisionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sort, setSort] = useState<ProjectSort>({ key: "updated", direction: "desc" });
   const [view, setView] = useBrowserStoredState<ViewMode>({
     key: PROJECTS_VIEW_STORAGE_KEY,
     defaultValue: "list",
@@ -514,6 +517,15 @@ export function ProjectsPageClient({
     subdivisionFilter,
     statusFilter,
   ]);
+
+  const sortedListProjects = useMemo(
+    () => sortProjects(filteredProjects, sort),
+    [filteredProjects, sort],
+  );
+
+  function handleSort(key: ProjectSort["key"]) {
+    setSort((current) => nextProjectSort(current, key));
+  }
 
   const groupedProjects = useMemo<SubdivisionGroup[]>(() => {
     const subdivisionMap = new Map<
@@ -1250,7 +1262,7 @@ export function ProjectsPageClient({
           ) : (
             <>
               <div className="divide-y rounded-xl border bg-card lg:hidden">
-                {filteredProjects.map((project) => (
+                {sortedListProjects.map((project) => (
                   <article key={project.id} className="space-y-3 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <Link
@@ -1289,16 +1301,16 @@ export function ProjectsPageClient({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Project Address</TableHead>
-                      <TableHead>Subdivision / Builder</TableHead>
-                      <TableHead>Job Progress</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Last Updated</TableHead>
+                      <ProjectSortHeader label="Project Address" sortKey="address" sort={sort} onSort={handleSort} />
+                      <ProjectSortHeader label="Subdivision / Builder" sortKey="group" sort={sort} onSort={handleSort} />
+                      <ProjectSortHeader label="Job Progress" sortKey="progress" sort={sort} onSort={handleSort} />
+                      <ProjectSortHeader label="Status" sortKey="status" sort={sort} onSort={handleSort} />
+                      <ProjectSortHeader label="Last Updated" sortKey="updated" sort={sort} onSort={handleSort} />
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredProjects.map((project) => (
+                    {sortedListProjects.map((project) => (
                       <TableRow
                         key={project.id}
                         data-state={
