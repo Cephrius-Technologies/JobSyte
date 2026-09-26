@@ -1,22 +1,22 @@
 // Onboarding: project detail server page. It fetches project, job, and
 // profitability rows for `components/jobs/jobs-table.tsx`; job mutations live in
 // the sibling `actions.ts`.
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
 import { AddJobButton } from "@/components/jobs/add-job-button";
 import { JobsTable } from "@/components/jobs/jobs-table";
 import { createClient } from "@/lib/supabase/server";
 import { CreateInvoiceButton } from "@/components/invoices/create-invoice-button";
-import { ProjectMapCard } from "@/components/projects/project-map-card";
 import {
+  getProjectDirectionsUrl,
   getProjectLocationSubtitle,
   getProjectStreetTitle,
 } from "@/components/projects/project-location";
-import { getPublicMapboxAccessToken } from "@/lib/maps/mapbox";
 import type {
   ProjectProfitability,
   ProjectStatus,
@@ -286,7 +286,7 @@ export default async function ProjectDashboardPage({
       : 0;
   const projectStreetTitle = getProjectStreetTitle(project);
   const projectLocationSubtitle = getProjectLocationSubtitle(project);
-  const mapboxToken = getPublicMapboxAccessToken();
+  const directionsUrl = getProjectDirectionsUrl(project);
 
   return (
     <div className="flex flex-col gap-6">
@@ -309,7 +309,15 @@ export default async function ProjectDashboardPage({
               : ""}
           </p>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+          {directionsUrl && (
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <a href={directionsUrl} target="_blank" rel="noreferrer">
+                Directions
+                <ExternalLink className="size-4" />
+              </a>
+            </Button>
+          )}
           <EditProjectButton
             project={project}
             builders={builders}
@@ -459,27 +467,18 @@ export default async function ProjectDashboardPage({
         </Card>
       </div>
 
-      <div className="order-1 grid gap-4 lg:order-none lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start">
-        <Card className="min-w-0 gap-4 p-4 sm:p-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-sm font-semibold">Jobs</div>
-              <div className="text-xs text-muted-foreground">
-                Add jobs, then mark them complete for invoicing.
-              </div>
+      <Card className="order-1 min-w-0 gap-4 p-4 sm:p-5 lg:order-none">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-sm font-semibold">Jobs</div>
+            <div className="text-xs text-muted-foreground">
+              Add jobs, then mark them complete for invoicing.
             </div>
           </div>
+        </div>
 
-          <JobsTable jobs={allJobs} projectId={project.id} />
-        </Card>
-
-        <ProjectMapCard
-          address={project.project_address}
-          city={project.project_city}
-          mapboxToken={mapboxToken}
-          state={project.project_state}
-        />
-      </div>
+        <JobsTable jobs={allJobs} projectId={project.id} />
+      </Card>
     </div>
   );
 }

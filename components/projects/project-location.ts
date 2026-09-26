@@ -72,3 +72,13 @@ export function getProjectMapAddress(project: ProjectLocationFields) {
     .filter(Boolean)
     .join(", ");
 }
+
+export function getProjectDirectionsUrl(project: ProjectLocationFields) {
+  const address = getProjectMapAddress(project);
+  if (!address) return null;
+
+  const url = new URL("https://www.google.com/maps/dir/");
+  url.searchParams.set("api", "1");
+  url.searchParams.set("destination", address);
+  return url.toString();
+}

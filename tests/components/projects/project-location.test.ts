@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getProjectDirectionsUrl,
   getProjectLocationSubtitle,
   getProjectMapAddress,
   getProjectStreetTitle,
@@ -26,5 +27,22 @@ describe("project location helpers", () => {
         project_state: "TX",
       }),
     ).toBe("2065 Solstice Lndg Dr, Katy, TX");
+  });
+
+  it("opens directions to the current project address", () => {
+    const url = getProjectDirectionsUrl({
+      project_address: "2065 Solstice Lndg Dr, Old City, ZZ 00000",
+      project_city: "Katy",
+      project_state: "TX",
+    });
+
+    expect(url).not.toBeNull();
+    expect(new URL(url!).searchParams.get("destination")).toBe(
+      "2065 Solstice Lndg Dr, Katy, TX",
+    );
+  });
+
+  it("does not create a directions link without an address", () => {
+    expect(getProjectDirectionsUrl({ project_address: "" })).toBeNull();
   });
 });
