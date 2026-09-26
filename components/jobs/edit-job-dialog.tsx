@@ -163,6 +163,7 @@ export function EditJobDialog({
     toPriceOption(job.price_cents),
   );
   const [price, setPrice] = useState(centsToPriceInput(job.price_cents));
+  const [scheduledStart, setScheduledStart] = useState(job.scheduled_start ?? "");
   const [scheduled, setScheduled] = useState(job.scheduled_completion ?? "");
   const [superintendent, setSuperintendent] = useState<ComboboxItem | null>(
     job.superintendent ? toComboboxItem(job.superintendent) : null,
@@ -348,6 +349,7 @@ export function EditJobDialog({
     fd.set("job_id", job.id);
     fd.set("title", toTitleCase(title?.name ?? ""));
     fd.set("price", price);
+    fd.set("scheduled_start", scheduledStart);
     fd.set("scheduled_completion", scheduled);
     fd.set("superintendent", toTitleCase(superintendent?.name ?? ""));
     fd.set("completed_by_type", hasAssignee ? completedByType : "");
@@ -422,6 +424,17 @@ export function EditJobDialog({
             <p className="text-xs text-muted-foreground">
               Prices are suggested from all projects in this company.
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">
+              Scheduled Start (Optional)
+            </div>
+            <DatePicker
+              value={scheduledStart}
+              onChange={setScheduledStart}
+              placeholder="Pick a start date"
+            />
           </div>
 
           <div className="space-y-2">

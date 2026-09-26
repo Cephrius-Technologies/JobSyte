@@ -96,6 +96,7 @@ export async function createJob(projectId: string, formData: FormData) {
   const scheduled_completion = String(
     formData.get("scheduled_completion") || "",
   ).trim();
+  const scheduledStart = String(formData.get("scheduled_start") || "").trim() || null;
   const superintendentRaw = toTitleCase(
     String(formData.get("superintendent") || ""),
   );
@@ -129,6 +130,7 @@ export async function createJob(projectId: string, formData: FormData) {
     company_id: companyId,
     title,
     price_cents,
+    scheduled_start: scheduledStart,
     scheduled_completion: scheduledCompletion,
     superintendent,
     completed_by_type: completedByType,
@@ -189,6 +191,7 @@ export async function editJob(formData: FormData) {
   const scheduled_completion = String(
     formData.get("scheduled_completion") || "",
   ).trim();
+  const scheduledStart = String(formData.get("scheduled_start") || "").trim() || null;
   const superintendentRaw = toTitleCase(
     String(formData.get("superintendent") || ""),
   );
@@ -220,6 +223,7 @@ export async function editJob(formData: FormData) {
     .update({
       title,
       price_cents,
+      scheduled_start: scheduledStart,
       scheduled_completion: scheduledCompletion,
       superintendent,
       completed_by_type: completedByType,

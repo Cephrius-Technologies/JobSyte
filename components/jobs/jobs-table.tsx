@@ -7,7 +7,6 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, DollarSign, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -39,11 +38,14 @@ import { AddJobDialog } from "@/components/jobs/add-job-dialog";
 import { HighlightScroller } from "@/components/ui/highlight-scroller";
 import { DeleteJobDialog } from "@/components/jobs/delete-job-dialog";
 import { EditJobDialog } from "@/components/jobs/edit-job-dialog";
+import { getLocalDateKey } from "@/components/jobs/job-status";
+import { JobStatusBadges } from "@/components/jobs/job-status-badges";
 
 export type JobRow = {
   id: string;
   title: string;
   price_cents: number;
+  scheduled_start: string | null;
   scheduled_completion: string | null;
   is_completed: boolean;
   superintendent: string | null;
@@ -73,29 +75,6 @@ function formatDate(value: string | null) {
   });
 }
 
-function JobStatusBadges({ job }: { job: JobRow }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Completion and billing can both be true, so render badges additively. */}
-      {job.is_completed ? (
-        <StatusBadge tone="success">Completed</StatusBadge>
-      ) : (
-        <StatusBadge tone="info">In progress</StatusBadge>
-      )}
-      {job.is_invoiced && (
-        <StatusBadge>
-          Invoiced
-        </StatusBadge>
-      )}
-      {job.is_paid && (
-        <StatusBadge tone="success">
-          Paid
-        </StatusBadge>
-      )}
-    </div>
-  );
-}
-
 export function JobsTable({
   jobs,
   projectId,
@@ -112,6 +91,7 @@ export function JobsTable({
   const [addJobOpen, setAddJobOpen] = useState(false);
   const [addJobInitialTitle, setAddJobInitialTitle] = useState("");
   const [addJobSeed, setAddJobSeed] = useState(0);
+  const today = getLocalDateKey(new Date());
 
   const filtered = useMemo(() => {
     let list = jobs;
@@ -126,6 +106,7 @@ export function JobsTable({
         j.title.toLowerCase().includes(q) ||
         (j.superintendent ?? "").toLowerCase().includes(q) ||
         (j.completed_by_name ?? "").toLowerCase().includes(q) ||
+        (j.scheduled_start ?? "").toLowerCase().includes(q) ||
         (j.scheduled_completion ?? "").toLowerCase().includes(q)
       );
     });
@@ -143,7 +124,11 @@ export function JobsTable({
     () => jobs.some((j) => (j.completed_by_name ?? "").trim().length > 0),
     [jobs],
   );
-  const showScheduled = useMemo(
+  const showScheduledStart = useMemo(
+    () => jobs.some((j) => (j.scheduled_start ?? "").trim().length > 0),
+    [jobs],
+  );
+  const showScheduledCompletion = useMemo(
     () => jobs.some((j) => (j.scheduled_completion ?? "").trim().length > 0),
     [jobs],
   );
@@ -349,10 +334,15 @@ export function JobsTable({
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <JobStatusBadges job={job} />
-                {showScheduled && (
+                <JobStatusBadges job={job} today={today} />
+                {showScheduledStart && job.scheduled_start && (
                   <span className="text-xs text-muted-foreground">
-                    {formatDate(job.scheduled_completion)}
+                    Starts {formatDate(job.scheduled_start)}
+                  </span>
+                )}
+                {showScheduledCompletion && job.scheduled_completion && (
+                  <span className="text-xs text-muted-foreground">
+                    Due {formatDate(job.scheduled_completion)}
                   </span>
                 )}
               </div>
@@ -384,7 +374,8 @@ export function JobsTable({
             <TableRow className="border-b bg-muted/20 hover:bg-muted/20">
               <TableHead className="h-11">Job Title</TableHead>
               <TableHead className="h-11 text-right">Price</TableHead>
-              {showScheduled && <TableHead className="h-11">Scheduled For</TableHead>}
+              {showScheduledStart && <TableHead className="h-11">Scheduled Start</TableHead>}
+              {showScheduledCompletion && <TableHead className="h-11">Scheduled Completion</TableHead>}
               {showSuperintendent && <TableHead className="h-11">Superintendent / GC</TableHead>}
               {showCompletedBy && <TableHead className="h-11">Completed By</TableHead>}
               <TableHead className="h-11">Status</TableHead>
@@ -397,7 +388,7 @@ export function JobsTable({
               <TableRow>
                 <TableCell
                   colSpan={
-                    4 + (showScheduled ? 1 : 0) + (showSuperintendent ? 1 : 0)
+                    4 + (showScheduledStart ? 1 : 0) + (showScheduledCompletion ? 1 : 0) + (showSuperintendent ? 1 : 0)
                     + (showCompletedBy ? 1 : 0)
                   }
                   className="text-sm text-muted-foreground"
@@ -410,7 +401,10 @@ export function JobsTable({
                 <TableRow key={job.id} data-highlight-id={job.id} className="h-14">
                   <TableCell className="font-medium">{job.title}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatMoney(job.price_cents)}</TableCell>
-                  {showScheduled && (
+                  {showScheduledStart && (
+                    <TableCell className="text-muted-foreground">{formatDate(job.scheduled_start)}</TableCell>
+                  )}
+                  {showScheduledCompletion && (
                     <TableCell className="text-muted-foreground">{formatDate(job.scheduled_completion)}</TableCell>
                   )}
                   {showSuperintendent && <TableCell className="text-muted-foreground">{job.superintendent ?? "—"}</TableCell>}
@@ -420,7 +414,7 @@ export function JobsTable({
                     </TableCell>
                   )}
                   <TableCell>
-                    <JobStatusBadges job={job} />
+                    <JobStatusBadges job={job} today={today} />
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

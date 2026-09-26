@@ -162,7 +162,7 @@ export default async function ProjectDashboardPage({
     supabase
       .from("jobs")
       .select(
-        "id, title, price_cents, scheduled_completion, is_completed, superintendent, completed_by_type, completed_by_id, completed_by_name, is_invoiced, is_paid",
+        "id, title, price_cents, scheduled_start, scheduled_completion, is_completed, superintendent, completed_by_type, completed_by_id, completed_by_name, is_invoiced, is_paid",
       )
       .eq("project_id", project.id)
       .is("deleted_at", null)

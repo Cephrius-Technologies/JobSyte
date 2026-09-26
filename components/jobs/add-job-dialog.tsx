@@ -163,6 +163,7 @@ export function AddJobDialog({
   });
   const [selectedPrice, setSelectedPrice] = useState<ComboboxItem | null>(null);
   const [price, setPrice] = useState("");
+  const [scheduledStart, setScheduledStart] = useState("");
   const [scheduled, setScheduled] = useState("");
   const [superintendent, setSuperintendent] = useState<ComboboxItem | null>(
     null,
@@ -324,6 +325,7 @@ export function AddJobDialog({
     const fd = new FormData();
     fd.set("title", toTitleCase(title?.name ?? ""));
     fd.set("price", price);
+    fd.set("scheduled_start", scheduledStart);
     fd.set("scheduled_completion", scheduled);
     fd.set("superintendent", toTitleCase(superintendent?.name ?? ""));
     fd.set("completed_by_type", hasAssignee ? completedByType : "");
@@ -340,6 +342,7 @@ export function AddJobDialog({
       setTitle(null);
       setSelectedPrice(null);
       setPrice("");
+      setScheduledStart("");
       setScheduled("");
       setSuperintendent(null);
       setCompletedByValue("");
@@ -402,6 +405,16 @@ export function AddJobDialog({
             <p className="text-xs text-muted-foreground">
               Prices are suggested from all projects in this company.
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="add-job-start" className="text-sm font-medium">Scheduled Start (Optional)</label>
+            <DatePicker
+              id="add-job-start"
+              value={scheduledStart}
+              onChange={setScheduledStart}
+              placeholder="Pick a start date"
+            />
           </div>
 
           <div className="space-y-2">
