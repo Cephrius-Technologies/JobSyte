@@ -118,7 +118,7 @@ export function AllJobsPage({ jobs, total, page }: { jobs: CompanyJob[]; total: 
           <Table className="min-w-[980px]">
             <TableHeader>
               <TableRow className="bg-muted/20 hover:bg-muted/20">
-                <TableHead>Job ID</TableHead>
+                <TableHead className="h-11">Job ID</TableHead>
                 <TableHead>Job</TableHead>
                 <TableHead>Project</TableHead>
                 <TableHead>Status</TableHead>

@@ -40,6 +40,8 @@ import { DeleteJobDialog } from "@/components/jobs/delete-job-dialog";
 import { EditJobDialog } from "@/components/jobs/edit-job-dialog";
 import { getLocalDateKey } from "@/components/jobs/job-status";
 import { JobStatusBadges } from "@/components/jobs/job-status-badges";
+import { formatJobDisplayId } from "@/lib/jobs/job-id";
+import { Badge } from "../ui/badge";
 
 export type JobRow = {
   id: string;
@@ -262,6 +264,9 @@ export function JobsTable({
               >
                 <div>
                   <div className="font-medium leading-tight">{job.title}</div>
+                  <div className="font-mono text-xs text-muted-foreground" title={job.id}>
+                    Job ID: {formatJobDisplayId(job.id)}
+                  </div>
                   <div className="text-sm text-muted-foreground">
                     {formatMoney(job.price_cents)}
                   </div>
@@ -372,6 +377,7 @@ export function JobsTable({
         <Table>
           <TableHeader>
             <TableRow className="border-b bg-muted/20 hover:bg-muted/20">
+              <TableHead className="h-11">Job ID</TableHead>
               <TableHead className="h-11">Job Title</TableHead>
               <TableHead className="h-11 text-right">Price</TableHead>
               {showScheduledStart && <TableHead className="h-11">Scheduled Start</TableHead>}
@@ -388,7 +394,7 @@ export function JobsTable({
               <TableRow>
                 <TableCell
                   colSpan={
-                    4 + (showScheduledStart ? 1 : 0) + (showScheduledCompletion ? 1 : 0) + (showSuperintendent ? 1 : 0)
+                    5 + (showScheduledStart ? 1 : 0) + (showScheduledCompletion ? 1 : 0) + (showSuperintendent ? 1 : 0)
                     + (showCompletedBy ? 1 : 0)
                   }
                   className="text-sm text-muted-foreground"
@@ -399,6 +405,11 @@ export function JobsTable({
             ) : (
               filtered.map((job) => (
                 <TableRow key={job.id} data-highlight-id={job.id} className="h-14">
+                  <TableCell className="font-mono text-xs text-muted-foreground" title={job.id}>
+                    <Badge>
+                      {formatJobDisplayId(job.id)}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="font-medium">{job.title}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatMoney(job.price_cents)}</TableCell>
                   {showScheduledStart && (

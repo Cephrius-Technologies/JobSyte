@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
 import { AllJobsPage } from "@/components/jobs/all-jobs-page";
 import { getActiveCompanyId } from "@/lib/active-company";
+import { formatJobDisplayId } from "@/lib/jobs/job-id";
 import { getCompanyJobsPageData, JOBS_PAGE_SIZE, parseJobsPage } from "@/lib/jobs/company-jobs";
 import { createClient } from "@/lib/supabase/server";
 

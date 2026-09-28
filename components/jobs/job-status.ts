@@ -5,6 +5,7 @@ export function getJobLifecycleStatus(
   today: string,
 ): JobLifecycleStatus {
   if (job.is_completed) return "completed";
+  if (!job.scheduled_start && !job.scheduled_completion) return "not-started"
   if (job.scheduled_completion && job.scheduled_completion < today) return "late";
   if (!job.scheduled_start) return null;
   return job.scheduled_start > today ? "not-started" : "in-progress";
