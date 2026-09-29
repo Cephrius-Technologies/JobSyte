@@ -1,11 +1,27 @@
 import { describe, expect, it, vi } from "vitest";
-import { getCompanyJobsPageData, parseJobsPage } from "@/lib/jobs/company-jobs";
+import { getCompanyJobsPageData, getJobsHref, nextJobsSort, parseJobsPage, parseJobsSort, parseJobsStatus } from "@/lib/jobs/company-jobs";
 
 describe("company jobs data", () => {
   it("clamps invalid page numbers to the first page", () => {
     expect(parseJobsPage("-5")).toBe(1);
     expect(parseJobsPage("abc")).toBe(1);
     expect(parseJobsPage("1.5")).toBe(1);
+  });
+
+  it("accepts only supported filters and preserves them in page links", () => {
+    expect(parseJobsStatus("completed")).toBe("completed");
+    expect(parseJobsStatus("open")).toBe("open");
+    expect(parseJobsStatus("unknown")).toBe("all");
+    expect(getJobsHref(1, "all")).toBe("/jobs");
+    expect(getJobsHref(2, "open")).toBe("/jobs?page=2&status=open");
+  });
+
+  it("validates sort parameters and toggles the selected column", () => {
+    expect(parseJobsSort("price", "desc")).toEqual({ key: "price", direction: "desc" });
+    expect(parseJobsSort("id", "asc")).toBeNull();
+    expect(nextJobsSort(null, "job")).toEqual({ key: "job", direction: "asc" });
+    expect(nextJobsSort({ key: "job", direction: "asc" }, "job")).toEqual({ key: "job", direction: "desc" });
+    expect(getJobsHref(2, "open", { key: "price", direction: "desc" })).toBe("/jobs?page=2&status=open&sort=price&dir=desc");
   });
 
   it("fetches only active-company jobs and their active-company projects", async () => {
@@ -74,6 +90,41 @@ describe("company jobs data", () => {
 
     await getCompanyJobsPageData({ from: vi.fn(() => jobsQuery) } as never, "company-1", 2);
 
+    expect(jobsQuery.range).toHaveBeenCalledWith(100, 199);
+  });
+
+  it.each([
+    ["open", false],
+    ["completed", true],
+  ] as const)("filters %s jobs before pagination", async (status, completed) => {
+    const jobsQuery = { select: vi.fn(), eq: vi.fn(), is: vi.fn(), order: vi.fn(), range: vi.fn() };
+    jobsQuery.select.mockReturnValue(jobsQuery);
+    jobsQuery.eq.mockReturnValue(jobsQuery);
+    jobsQuery.is.mockReturnValue(jobsQuery);
+    jobsQuery.order.mockReturnValue(jobsQuery);
+    jobsQuery.range.mockResolvedValue({ data: [], count: 5, error: null });
+
+    const result = await getCompanyJobsPageData({ from: vi.fn(() => jobsQuery) } as never, "company-1", 2, status);
+
+    expect(jobsQuery.eq).toHaveBeenCalledWith("is_completed", completed);
+    expect(jobsQuery.eq.mock.invocationCallOrder.at(-1)).toBeLessThan(jobsQuery.range.mock.invocationCallOrder[0]);
+    expect(jobsQuery.range).toHaveBeenCalledWith(100, 199);
+    expect(result.total).toBe(5);
+  });
+
+  it("sorts all company jobs before paging and uses the project relation for project order", async () => {
+    const jobsQuery = { select: vi.fn(), eq: vi.fn(), is: vi.fn(), order: vi.fn(), range: vi.fn() };
+    jobsQuery.select.mockReturnValue(jobsQuery);
+    jobsQuery.eq.mockReturnValue(jobsQuery);
+    jobsQuery.is.mockReturnValue(jobsQuery);
+    jobsQuery.order.mockReturnValue(jobsQuery);
+    jobsQuery.range.mockResolvedValue({ data: [], count: 101, error: null });
+
+    await getCompanyJobsPageData({ from: vi.fn(() => jobsQuery) } as never, "company-1", 2, "open", { key: "project", direction: "asc" });
+
+    expect(jobsQuery.select.mock.calls[0][0]).toContain("project_sort:projects(project_address)");
+    expect(jobsQuery.order).toHaveBeenCalledWith("project_sort(project_address)", { ascending: true, nullsFirst: false });
+    expect(jobsQuery.order.mock.invocationCallOrder[0]).toBeLessThan(jobsQuery.range.mock.invocationCallOrder[0]);
     expect(jobsQuery.range).toHaveBeenCalledWith(100, 199);
   });
 

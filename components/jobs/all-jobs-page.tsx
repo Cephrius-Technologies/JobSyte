@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CheckCircle2, ChevronLeft, ChevronRight, DollarSign, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, DollarSign, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { toggleJobComplete } from "@/app/(jobsyte-app)/projects/[id]/actions";
 import { EditJobDialog } from "@/components/jobs/edit-job-dialog";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatJobDisplayId } from "@/lib/jobs/job-id";
-import { JOBS_PAGE_SIZE, type CompanyJob } from "@/lib/jobs/company-jobs";
+import { getJobsHref, JOBS_PAGE_SIZE, nextJobsSort, type CompanyJob, type JobsSort, type JobsSortKey, type JobsStatusFilter } from "@/lib/jobs/company-jobs";
 
 function formatMoney(cents: number) {
   return (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -35,7 +35,30 @@ function formatDate(value: string | null) {
     : date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function AllJobsPage({ jobs, total, page }: { jobs: CompanyJob[]; total: number; page: number }) {
+function JobsSortHeader({ label, sortKey, sort, status, className }: {
+  label: string;
+  sortKey: JobsSortKey;
+  sort: JobsSort | null;
+  status: JobsStatusFilter;
+  className?: string;
+}) {
+  const active = sort?.key === sortKey;
+  const Icon = !active ? ChevronsUpDown : sort.direction === "asc" ? ChevronUp : ChevronDown;
+
+  return (
+    <TableHead className={className} aria-sort={active ? sort.direction === "asc" ? "ascending" : "descending" : "none"}>
+      <Link
+        href={getJobsHref(1, status, nextJobsSort(sort, sortKey))}
+        className="inline-flex min-h-9 items-center gap-1.5 rounded-md transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {label}
+        <Icon aria-hidden="true" className="size-3.5 shrink-0" />
+      </Link>
+    </TableHead>
+  );
+}
+
+export function AllJobsPage({ jobs, total, page, status = "all", sort = null }: { jobs: CompanyJob[]; total: number; page: number; status?: JobsStatusFilter; sort?: JobsSort | null }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [editingJob, setEditingJob] = useState<CompanyJob | null>(null);
@@ -79,7 +102,7 @@ export function AllJobsPage({ jobs, total, page }: { jobs: CompanyJob[]; total: 
             <span className="mr-1 whitespace-nowrap text-muted-foreground">Page {page} of {pageCount}</span>
             {page > 1 ? (
               <Button asChild variant="outline" size="icon-sm">
-                <Link href={`/jobs?page=${page - 1}`} aria-label="Previous page" scroll={false}>
+                <Link href={getJobsHref(page - 1, status, sort)} aria-label="Previous page" scroll={false}>
                   <ChevronLeft className="size-4" />
                 </Link>
               </Button>
@@ -90,7 +113,7 @@ export function AllJobsPage({ jobs, total, page }: { jobs: CompanyJob[]; total: 
             )}
             {page < pageCount ? (
               <Button asChild variant="outline" size="icon-sm">
-                <Link href={`/jobs?page=${page + 1}`} aria-label="Next page" scroll={false}>
+                <Link href={getJobsHref(page + 1, status, sort)} aria-label="Next page" scroll={false}>
                   <ChevronRight className="size-4" />
                 </Link>
               </Button>
@@ -103,14 +126,32 @@ export function AllJobsPage({ jobs, total, page }: { jobs: CompanyJob[]; total: 
         )}
       </div>
 
+      <nav aria-label="Filter jobs by completion" className="flex flex-wrap gap-2">
+        {([
+          { value: "all", label: "All" },
+          { value: "open", label: "Incomplete" },
+          { value: "completed", label: "Completed" },
+        ] as const).map((filter) => (
+          <Button key={filter.value} asChild size="sm" variant={status === filter.value ? "default" : "outline"}>
+            <Link href={getJobsHref(1, filter.value, sort)} aria-current={status === filter.value ? "page" : undefined}>
+              {filter.label}
+            </Link>
+          </Button>
+        ))}
+      </nav>
+
       {jobs.length === 0 ? (
         <Card className="p-8 text-center">
-          <p className="font-medium">No jobs to show</p>
+          <p className="font-medium">
+            {status === "all" ? "No jobs to show" : `No ${status === "open" ? "incomplete" : "completed"} jobs`}
+          </p>
           <p className="text-sm text-muted-foreground">
-            Add jobs from a project, or return to the first page if this page is empty.
+            {status === "all" ? "Add jobs from a project to see them here." : "Try another filter to see more jobs."}
           </p>
           <Button asChild variant="outline" className="mx-auto mt-2">
-            <Link href="/projects">View projects</Link>
+            <Link href={status === "all" ? "/projects" : getJobsHref(1, "all", sort)}>
+              {status === "all" ? "View projects" : "View all jobs"}
+            </Link>
           </Button>
         </Card>
       ) : (
@@ -119,13 +160,13 @@ export function AllJobsPage({ jobs, total, page }: { jobs: CompanyJob[]; total: 
             <TableHeader>
               <TableRow className="bg-muted/20 hover:bg-muted/20">
                 <TableHead className="h-11">Job ID</TableHead>
-                <TableHead>Job</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead>Scheduled start</TableHead>
-                <TableHead>Scheduled completion</TableHead>
-                <TableHead>Superintendent / GC</TableHead>
+                <JobsSortHeader label="Job" sortKey="job" sort={sort} status={status} />
+                <JobsSortHeader label="Project" sortKey="project" sort={sort} status={status} />
+                <JobsSortHeader label="Status" sortKey="status" sort={sort} status={status} />
+                <JobsSortHeader label="Price" sortKey="price" sort={sort} status={status} className="text-right" />
+                <JobsSortHeader label="Scheduled start" sortKey="scheduled_start" sort={sort} status={status} />
+                <JobsSortHeader label="Scheduled completion" sortKey="scheduled_completion" sort={sort} status={status} />
+                <JobsSortHeader label="Superintendent / GC" sortKey="superintendent" sort={sort} status={status} />
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>

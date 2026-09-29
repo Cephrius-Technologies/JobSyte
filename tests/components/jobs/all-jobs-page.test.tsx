@@ -62,4 +62,30 @@ describe("AllJobsPage", () => {
     expect(screen.getByRole("button", { name: "Previous page" })).toBeDisabled();
     expect(pages.compareDocumentPosition(screen.getByRole("table")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it("keeps the selected filter when changing pages", () => {
+    render(<AllJobsPage jobs={[job]} total={101} page={1} status="open" />);
+
+    expect(screen.getByRole("link", { name: "Incomplete" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Completed" })).toHaveAttribute("href", "/jobs?status=completed");
+    expect(screen.getByRole("link", { name: "Next page" })).toHaveAttribute("href", "/jobs?page=2&status=open");
+  });
+
+  it("links sortable headers and keeps the sort through filters and pagination", () => {
+    render(<AllJobsPage jobs={[job]} total={101} page={1} status="open" sort={{ key: "price", direction: "asc" }} />);
+
+    expect(screen.getByRole("columnheader", { name: "Job ID" })).not.toContainElement(screen.queryByRole("link", { name: "Job ID" }));
+    expect(screen.getByRole("columnheader", { name: "Price" })).toHaveAttribute("aria-sort", "ascending");
+    expect(screen.getByRole("link", { name: "Price" })).toHaveAttribute("href", "/jobs?status=open&sort=price&dir=desc");
+    expect(screen.getByRole("link", { name: "Project" })).toHaveAttribute("href", "/jobs?status=open&sort=project&dir=asc");
+    expect(screen.getByRole("link", { name: "Next page" })).toHaveAttribute("href", "/jobs?page=2&status=open&sort=price&dir=asc");
+    expect(screen.getByRole("link", { name: "Completed" })).toHaveAttribute("href", "/jobs?status=completed&sort=price&dir=asc");
+  });
+
+  it("offers to clear a filter with no matching jobs", () => {
+    render(<AllJobsPage jobs={[]} total={0} page={1} status="completed" />);
+
+    expect(screen.getByText("No completed jobs")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View all jobs" })).toHaveAttribute("href", "/jobs");
+  });
 });
