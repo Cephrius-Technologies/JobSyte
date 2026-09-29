@@ -57,3 +57,5 @@ JobSyte/.claude
 !/supabase/migrations/
 /supabase/migrations/*
 !/supabase/migrations/20260907000000_create_invoice_for_builder_atomic.sql
+!/supabase/migrations/20260929000000_create_project_notes.sql
+!/supabase/migrations/20260929010000_allow_project_note_deletion.sql

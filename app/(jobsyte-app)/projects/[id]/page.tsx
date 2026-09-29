@@ -22,6 +22,9 @@ import type {
   ProjectStatus,
 } from "@/components/accounting/types";
 import { EditProjectButton } from "@/components/projects/edit-project-button";
+import { ProjectNotesCard } from "@/components/projects/project-notes";
+import { getActiveCompanyId } from "@/lib/active-company";
+import type { ProjectNote } from "@/lib/projects/notes";
 
 function formatMoney(cents: number) {
   const dollars = cents / 100;
@@ -111,12 +114,16 @@ export default async function ProjectDashboardPage({
 
   if (userError || !user) redirect("/login");
 
+  const companyId = await getActiveCompanyId();
+  if (!companyId) redirect("/login");
+
   let projectRes = await supabase
     .from("projects")
     .select(
       "id, project_address, project_city, project_state, builder_name, subdivision, builder_id, subdivision_id",
     )
     .is("deleted_at", null)
+    .eq("company_id", companyId)
     .eq("id", id)
     .single();
 
@@ -128,6 +135,7 @@ export default async function ProjectDashboardPage({
       .from("projects")
       .select("id, project_address, builder_name, subdivision, builder_id, subdivision_id")
       .is("deleted_at", null)
+      .eq("company_id", companyId)
       .eq("id", id)
       .single();
   }
@@ -158,13 +166,14 @@ export default async function ProjectDashboardPage({
     );
   }
 
-  const [jobsRes, expensesRes, buildersRes, subdivisionsRes] = await Promise.all([
+  const [jobsRes, expensesRes, buildersRes, subdivisionsRes, notesRes] = await Promise.all([
     supabase
       .from("jobs")
       .select(
         "id, title, price_cents, scheduled_start, scheduled_completion, is_completed, superintendent, completed_by_type, completed_by_id, completed_by_name, is_invoiced, is_paid",
       )
       .eq("project_id", project.id)
+      .eq("company_id", companyId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     supabase
@@ -173,12 +182,21 @@ export default async function ProjectDashboardPage({
       .eq("project_id", project.id),
     supabase.from("builders").select("id, name").order("name"),
     supabase.from("subdivisions").select("id, name").order("name"),
+    supabase
+      .from("project_notes")
+      .select("id, project_id, job_id, author_id, body, created_at")
+      .eq("company_id", companyId)
+      .eq("project_id", project.id)
+      .order("created_at", { ascending: false }),
   ]);
+
+  if (notesRes.error) throw new Error(notesRes.error.message);
 
   const { data: jobs } = jobsRes;
   const expenses = expensesRes.data ?? [];
   const builders = buildersRes.data ?? [];
   const subdivisions = subdivisionsRes.data ?? [];
+  const allNotes = (notesRes.data ?? []) as ProjectNote[];
 
   const allJobs = jobs ?? [];
   const totalJobs = allJobs.length;
@@ -477,8 +495,19 @@ export default async function ProjectDashboardPage({
           </div>
         </div>
 
-        <JobsTable jobs={allJobs} projectId={project.id} />
+        <JobsTable
+          jobs={allJobs}
+          projectId={project.id}
+          notes={allNotes.filter((note) => note.job_id !== null)}
+          currentUserId={user.id}
+        />
       </Card>
+
+      <ProjectNotesCard
+        projectId={project.id}
+        notes={allNotes.filter((note) => note.job_id === null)}
+        currentUserId={user.id}
+      />
     </div>
   );
 }

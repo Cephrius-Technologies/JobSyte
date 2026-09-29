@@ -5,7 +5,7 @@
 // invoice badges are driven by columns loaded in the project detail route.
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, DollarSign, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { CheckCircle2, DollarSign, MoreHorizontal, Pencil, Plus, Search, StickyNote, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +42,8 @@ import { getLocalDateKey } from "@/components/jobs/job-status";
 import { JobStatusBadges } from "@/components/jobs/job-status-badges";
 import { formatJobDisplayId } from "@/lib/jobs/job-id";
 import { Badge } from "../ui/badge";
+import { JobNotesDialog } from "@/components/projects/project-notes";
+import type { ProjectNote } from "@/lib/projects/notes";
 
 export type JobRow = {
   id: string;
@@ -77,23 +79,51 @@ function formatDate(value: string | null) {
   });
 }
 
+function JobNotesButton({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+      onClick={onClick}
+    >
+      <StickyNote className="size-3.5" />
+      {count > 0 ? `${count} notes` : "Add note"}
+    </button>
+  );
+}
+
 export function JobsTable({
   jobs,
   projectId,
+  notes,
+  currentUserId,
 }: {
   jobs: JobRow[];
   projectId: string;
+  notes: ProjectNote[];
+  currentUserId: string;
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | "open" | "done">("all");
   const [isPending, startTransition] = useTransition();
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<JobRow | null>(null);
+  const [notesJob, setNotesJob] = useState<JobRow | null>(null);
   const [query, setQuery] = useState("");
   const [addJobOpen, setAddJobOpen] = useState(false);
   const [addJobInitialTitle, setAddJobInitialTitle] = useState("");
   const [addJobSeed, setAddJobSeed] = useState(0);
   const today = getLocalDateKey(new Date());
+  const notesByJob = useMemo(() => {
+    const grouped = new Map<string, ProjectNote[]>();
+    for (const note of notes) {
+      if (!note.job_id) continue;
+      const group = grouped.get(note.job_id) ?? [];
+      group.push(note);
+      grouped.set(note.job_id, group);
+    }
+    return grouped;
+  }, [notes]);
 
   const filtered = useMemo(() => {
     let list = jobs;
@@ -264,6 +294,7 @@ export function JobsTable({
               >
                 <div>
                   <div className="font-medium leading-tight">{job.title}</div>
+                  <JobNotesButton count={notesByJob.get(job.id)?.length ?? 0} onClick={() => setNotesJob(job)} />
                   <div className="font-mono text-xs text-muted-foreground" title={job.id}>
                     Job ID: {formatJobDisplayId(job.id)}
                   </div>
@@ -410,7 +441,10 @@ export function JobsTable({
                       {formatJobDisplayId(job.id)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-medium">{job.title}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">{job.title}</div>
+                    <JobNotesButton count={notesByJob.get(job.id)?.length ?? 0} onClick={() => setNotesJob(job)} />
+                  </TableCell>
                   <TableCell className="text-right tabular-nums">{formatMoney(job.price_cents)}</TableCell>
                   {showScheduledStart && (
                     <TableCell className="text-muted-foreground">{formatDate(job.scheduled_start)}</TableCell>
@@ -524,6 +558,18 @@ export function JobsTable({
           onOpenChange={(open) => {
             if (!open) setEditingJob(null);
           }}
+        />
+      )}
+      {notesJob && (
+        <JobNotesDialog
+          key={notesJob.id}
+          open
+          onOpenChange={(open) => { if (!open) setNotesJob(null); }}
+          projectId={projectId}
+          jobId={notesJob.id}
+          jobTitle={notesJob.title}
+          notes={notesByJob.get(notesJob.id) ?? []}
+          currentUserId={currentUserId}
         />
       )}
       <AddJobDialog
