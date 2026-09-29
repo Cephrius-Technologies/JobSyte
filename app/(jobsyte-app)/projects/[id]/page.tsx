@@ -22,7 +22,7 @@ import type {
   ProjectStatus,
 } from "@/components/accounting/types";
 import { EditProjectButton } from "@/components/projects/edit-project-button";
-import { ProjectNotesCard } from "@/components/projects/project-notes";
+import { ProjectNotesButton } from "@/components/projects/project-notes";
 import { getActiveCompanyId } from "@/lib/active-company";
 import type { ProjectNote } from "@/lib/projects/notes";
 
@@ -328,6 +328,11 @@ export default async function ProjectDashboardPage({
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+          <ProjectNotesButton
+            projectId={project.id}
+            notes={allNotes.filter((note) => note.job_id === null)}
+            currentUserId={user.id}
+          />
           {directionsUrl && (
             <Button asChild variant="outline" className="w-full sm:w-auto">
               <a href={directionsUrl} target="_blank" rel="noreferrer">
@@ -354,16 +359,11 @@ export default async function ProjectDashboardPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
-          label="Total Jobs"
-          value={String(totalJobs)}
-          meta={`${openJobs} open`}
-        />
-        <StatCard
-          label="Completed Jobs"
-          value={String(completedJobs)}
-          meta={`${completionPct}% complete`}
+          label="Jobs Completed / Total"
+          value={`${completedJobs} / ${totalJobs}`}
+          meta={`${completionPct}% complete · ${openJobs} open`}
         />
         <StatCard
           label="Total Project Value"
@@ -502,12 +502,6 @@ export default async function ProjectDashboardPage({
           currentUserId={user.id}
         />
       </Card>
-
-      <ProjectNotesCard
-        projectId={project.id}
-        notes={allNotes.filter((note) => note.job_id === null)}
-        currentUserId={user.id}
-      />
     </div>
   );
 }

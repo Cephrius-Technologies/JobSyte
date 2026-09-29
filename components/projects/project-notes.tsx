@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { StickyNote, Trash2 } from "lucide-react";
 import { addProjectNote, deleteProjectNote } from "@/app/(jobsyte-app)/projects/[id]/note-actions";
 import {
   AlertDialog,
@@ -16,7 +16,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -167,22 +166,53 @@ function NoteComposer({ projectId, jobId, label }: { projectId: string; jobId: s
   );
 }
 
-export function ProjectNotesCard({ projectId, notes, currentUserId }: {
+export function ProjectNotesButton({ projectId, notes, currentUserId }: {
   projectId: string;
   notes: ProjectNote[];
   currentUserId: string;
 }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const openFromLink = () => {
+      if (window.location.hash === "#project-notes") setOpen(true);
+    };
+    const timeoutId = window.setTimeout(openFromLink, 0);
+    window.addEventListener("hashchange", openFromLink);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("hashchange", openFromLink);
+    };
+  }, []);
+
+  function changeOpen(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen && window.location.hash === "#project-notes") {
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+    }
+  }
+
   return (
-    <Card id="project-notes" className="order-3 gap-4 p-4 sm:p-5 lg:order-none">
-      <div>
-        <h2 className="text-sm font-semibold">Project notes</h2>
-        <p className="text-xs text-muted-foreground">Updates shared with your company.</p>
-      </div>
-      <NotesList projectId={projectId} notes={notes} currentUserId={currentUserId} />
-      <div className="border-t pt-4">
-        <NoteComposer projectId={projectId} jobId={null} label="project" />
-      </div>
-    </Card>
+    <>
+      <Button id="project-notes" type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setOpen(true)}>
+        <StickyNote className="size-4" />
+        {notes.length === 0 ? "Add Project Notes" : "Project Notes"}
+      </Button>
+      <Dialog open={open} onOpenChange={changeOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Project notes</DialogTitle>
+            <DialogDescription>Updates shared with your company.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[50vh] overflow-y-auto">
+            <NotesList projectId={projectId} notes={notes} currentUserId={currentUserId} />
+          </div>
+          <div className="border-t pt-4">
+            <NoteComposer projectId={projectId} jobId={null} label="project" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

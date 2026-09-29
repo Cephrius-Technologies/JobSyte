@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { JobNotesDialog, ProjectNotesCard } from "@/components/projects/project-notes";
+import { JobNotesDialog, ProjectNotesButton } from "@/components/projects/project-notes";
 import { addProjectNote, deleteProjectNote } from "@/app/(jobsyte-app)/projects/[id]/note-actions";
 
 const refresh = vi.fn();
@@ -12,14 +12,33 @@ vi.mock("@/app/(jobsyte-app)/projects/[id]/note-actions", () => ({
   deleteProjectNote: vi.fn(),
 }));
 
-describe("ProjectNotesCard", () => {
+describe("ProjectNotesButton", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("shows the add label when empty and opens the project notes modal", () => {
+    render(<ProjectNotesButton projectId="project-1" currentUserId="user-1" notes={[]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Project Notes" }));
+    expect(screen.getByRole("dialog", { name: "Project notes" })).toBeInTheDocument();
+    expect(screen.getByText("No notes yet.")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Add project note" })).toBeInTheDocument();
+  });
+
+  it("opens from a project note notification link", async () => {
+    window.history.replaceState(null, "", "/projects/project-1#project-notes");
+    try {
+      render(<ProjectNotesButton projectId="project-1" currentUserId="user-1" notes={[]} />);
+      expect(await screen.findByRole("dialog", { name: "Project notes" })).toBeInTheDocument();
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+  });
 
   it("shows the note time in the device timezone", () => {
     vi.stubEnv("TZ", "America/Chicago");
     try {
       render(
-        <ProjectNotesCard
+        <ProjectNotesButton
           projectId="project-1"
           currentUserId="user-1"
           notes={[{
@@ -33,6 +52,7 @@ describe("ProjectNotesCard", () => {
         />,
       );
 
+      fireEvent.click(screen.getByRole("button", { name: "Project Notes" }));
       expect(screen.getByText(/Sep 29, 2026, 9:00 AM/)).toBeInTheDocument();
       expect(screen.queryByText(/UTC/)).not.toBeInTheDocument();
     } finally {
@@ -43,7 +63,7 @@ describe("ProjectNotesCard", () => {
   it("shows previous notes and saves a new project note", async () => {
     vi.mocked(addProjectNote).mockResolvedValue({ ok: true });
     render(
-      <ProjectNotesCard
+      <ProjectNotesButton
         projectId="project-1"
         currentUserId="user-1"
         notes={[{
@@ -57,6 +77,8 @@ describe("ProjectNotesCard", () => {
       />,
     );
 
+    expect(screen.queryByText("Confirm delivery gate")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Project Notes" }));
     expect(screen.getByText("Confirm delivery gate")).toBeInTheDocument();
     fireEvent.change(screen.getByRole("textbox", { name: "Add project note" }), {
       target: { value: "Bring site plans" },
@@ -93,7 +115,7 @@ describe("ProjectNotesCard", () => {
   it("confirms deletion of an owned project note", async () => {
     vi.mocked(deleteProjectNote).mockResolvedValue({ ok: true });
     render(
-      <ProjectNotesCard
+      <ProjectNotesButton
         projectId="project-1"
         currentUserId="user-1"
         notes={[{
@@ -107,6 +129,7 @@ describe("ProjectNotesCard", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Project Notes" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete note: Old note" }));
     expect(screen.getByRole("alertdialog", { name: "Delete this note?" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
@@ -120,7 +143,7 @@ describe("ProjectNotesCard", () => {
 
   it("does not offer deletion of another member's note", () => {
     render(
-      <ProjectNotesCard
+      <ProjectNotesButton
         projectId="project-1"
         currentUserId="user-1"
         notes={[{
@@ -134,6 +157,7 @@ describe("ProjectNotesCard", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Project Notes" }));
     expect(screen.queryByRole("button", { name: /Delete note/ })).not.toBeInTheDocument();
   });
 
