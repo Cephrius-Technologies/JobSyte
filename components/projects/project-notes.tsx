@@ -173,7 +173,7 @@ export function ProjectNotesCard({ projectId, notes, currentUserId }: {
   currentUserId: string;
 }) {
   return (
-    <Card className="order-3 gap-4 p-4 sm:p-5 lg:order-none">
+    <Card id="project-notes" className="order-3 gap-4 p-4 sm:p-5 lg:order-none">
       <div>
         <h2 className="text-sm font-semibold">Project notes</h2>
         <p className="text-xs text-muted-foreground">Updates shared with your company.</p>

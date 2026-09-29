@@ -9,7 +9,7 @@ import { SidebarStateProvider } from "./sidebar-state";
 import { RouteTransition } from "./route-transition";
 import { MainView } from "./mainview";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, userId }: { children: React.ReactNode; userId: string }) {
   return (
     <BreadcrumbProvider>
       <SidebarStateProvider>
@@ -18,7 +18,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex md:h-full md:min-h-0">
             <Sidebar />
             <div className="min-w-0 flex-1 flex flex-col md:h-full md:min-h-0 md:overflow-hidden">
-              <Header />
+              <Header userId={userId} />
               <MainView>
                 <main id="main-content" data-app-shell-main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-6 lg:p-8 2xl:px-10">
                   <RouteTransition>{children}</RouteTransition>

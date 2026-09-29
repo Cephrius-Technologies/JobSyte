@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { useSidebarState } from "./sidebar-state";
 import { NewProjectDialog } from "@/components/projects/new-project-dialog";
 import { MobileSidebar } from "./mobile-sidebar";
+import { NoteNotifications } from "./note-notifications";
 
 type SuggestionType = "project" | "job" | "invoice" | "accounting" | "employee" | "crew" | "payment" | "expense";
 
@@ -103,7 +104,7 @@ function formatProjectQueryPreview(value: string) {
   return normalizeQuery(value);
 }
 
-export function Header() {
+export function Header({ userId }: { userId?: string }) {
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -497,6 +498,7 @@ export function Header() {
           </Button>
         </form>        </div>
         <div className="col-start-2 row-start-1 ml-auto flex min-w-0 items-center justify-end gap-2 md:col-start-3">
+          {userId && <NoteNotifications userId={userId} />}
           <div className="hidden min-w-0 max-w-[16rem] overflow-hidden lg:block">
             {rightSlot}
           </div>

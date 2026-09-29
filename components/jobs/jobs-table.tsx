@@ -3,8 +3,8 @@
 // Onboarding: project detail job table. Row-level edits are delegated to
 // `edit-job-dialog.tsx`, deletion to `delete-job-dialog.tsx`, and payment /
 // invoice badges are driven by columns loaded in the project detail route.
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, DollarSign, MoreHorizontal, Pencil, Plus, Search, StickyNote, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -104,11 +104,21 @@ export function JobsTable({
   currentUserId: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [filter, setFilter] = useState<"all" | "open" | "done">("all");
   const [isPending, startTransition] = useTransition();
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<JobRow | null>(null);
   const [notesJob, setNotesJob] = useState<JobRow | null>(null);
+  const linkedJobId = searchParams.get("noteJob");
+  useEffect(() => {
+    if (!linkedJobId) return;
+    const linkedJob = jobs.find((job) => job.id === linkedJobId);
+    if (!linkedJob) return;
+    const timeoutId = window.setTimeout(() => setNotesJob(linkedJob), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [jobs, linkedJobId]);
   const [query, setQuery] = useState("");
   const [addJobOpen, setAddJobOpen] = useState(false);
   const [addJobInitialTitle, setAddJobInitialTitle] = useState("");
@@ -564,7 +574,12 @@ export function JobsTable({
         <JobNotesDialog
           key={notesJob.id}
           open
-          onOpenChange={(open) => { if (!open) setNotesJob(null); }}
+          onOpenChange={(open) => {
+            if (!open) {
+              setNotesJob(null);
+              if (linkedJobId) router.replace(pathname);
+            }
+          }}
           projectId={projectId}
           jobId={notesJob.id}
           jobTitle={notesJob.title}
