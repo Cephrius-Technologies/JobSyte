@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell } from "lucide-react";
+import { AlertTriangle, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useCompany } from "@/lib/company-context";
 import { createClient } from "@/lib/supabase/client";
+import { getLocalDateKey } from "@/components/jobs/job-status";
 
 type NoteNotification = {
   id: string;
@@ -19,6 +20,13 @@ type NoteNotification = {
   read_at: string | null;
 };
 
+type OverdueJob = {
+  id: string;
+  title: string;
+  project_id: string;
+  scheduled_completion: string;
+};
+
 export function NoteNotifications({ userId }: { userId: string }) {
   const { activeCompany } = useCompany();
   const companyId = activeCompany?.id;
@@ -28,12 +36,15 @@ export function NoteNotifications({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NoteNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [error, setError] = useState(false);
+  const [overdueJobs, setOverdueJobs] = useState<OverdueJob[]>([]);
+  const [overdueCount, setOverdueCount] = useState(0);
+  const [notesError, setNotesError] = useState(false);
+  const [overdueError, setOverdueError] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!companyId) return;
     const currentRequest = ++requestId.current;
-    const [recent, unread] = await Promise.all([
+    const [recent, unread, overdue] = await Promise.all([
       supabase.from("note_notifications")
         .select("id, project_id, job_id, project_label, job_label, preview, created_at, read_at")
         .eq("company_id", companyId)
@@ -45,21 +56,38 @@ export function NoteNotifications({ userId }: { userId: string }) {
         .eq("company_id", companyId)
         .eq("recipient_id", userId)
         .is("read_at", null),
+      supabase.from("jobs")
+        .select("id, title, project_id, scheduled_completion", { count: "exact" })
+        .eq("company_id", companyId)
+        .eq("is_completed", false)
+        .is("deleted_at", null)
+        .lt("scheduled_completion", getLocalDateKey(new Date()))
+        .order("scheduled_completion", { ascending: true })
+        .limit(25),
     ]);
     if (currentRequest !== requestId.current) return;
     if (recent.error || unread.error) {
-      setError(true);
-      return;
+      setNotesError(true);
+    } else {
+      setItems((recent.data ?? []) as NoteNotification[]);
+      setUnreadCount(unread.count ?? 0);
+      setNotesError(false);
     }
-    setItems((recent.data ?? []) as NoteNotification[]);
-    setUnreadCount(unread.count ?? 0);
-    setError(false);
+    if (overdue.error) {
+      setOverdueError(true);
+    } else {
+      setOverdueJobs((overdue.data ?? []) as OverdueJob[]);
+      setOverdueCount(overdue.count ?? 0);
+      setOverdueError(false);
+    }
   }, [companyId, supabase, userId]);
 
   useEffect(() => {
     const initial = window.setTimeout(() => {
       setItems([]);
       setUnreadCount(0);
+      setOverdueJobs([]);
+      setOverdueCount(0);
       void refresh();
     }, 0);
     const interval = window.setInterval(() => {
@@ -67,11 +95,13 @@ export function NoteNotifications({ userId }: { userId: string }) {
     }, 30000);
     const onFocus = () => { void refresh(); };
     window.addEventListener("focus", onFocus);
+    window.addEventListener("jobsyte:jobs-changed", onFocus);
     return () => {
       requestId.current += 1;
       window.clearTimeout(initial);
       window.clearInterval(interval);
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("jobsyte:jobs-changed", onFocus);
     };
   }, [refresh]);
 
@@ -97,30 +127,61 @@ export function NoteNotifications({ userId }: { userId: string }) {
     router.push(destination);
   }
 
+  const totalCount = unreadCount + overdueCount;
+  const countLabel = [
+    unreadCount ? `${unreadCount} unread` : null,
+    overdueCount ? `${overdueCount} overdue job${overdueCount === 1 ? "" : "s"}` : null,
+  ].filter(Boolean).join(", ");
+
   return (
     <Popover open={open} onOpenChange={(next) => {
       setOpen(next);
       if (next) void refresh();
     }}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="icon" className="relative size-9" aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}>
+        <Button variant="outline" size="icon" className="relative size-9" aria-label={`Notifications${countLabel ? `, ${countLabel}` : ""}`}>
           <Bell className="size-4" />
-          {unreadCount > 0 && (
+          {totalCount > 0 && (
             <span className="absolute -right-1 -top-1 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
-              {unreadCount > 99 ? "99+" : unreadCount}
+              {totalCount > 99 ? "99+" : totalCount}
             </span>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] gap-0 p-0">
         <div className="border-b px-4 py-3 text-sm font-semibold">Notifications</div>
-        {error ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">Could not load notifications.</p>
-        ) : items.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">No note notifications yet.</p>
-        ) : (
-          <div className="max-h-96 divide-y overflow-y-auto">
-            {items.map((notification) => (
+        <div className="max-h-96 overflow-y-auto">
+          {overdueError && <p className="px-4 py-3 text-xs text-destructive">Could not load overdue jobs.</p>}
+          {overdueJobs.length > 0 && (
+            <section aria-label="Overdue jobs">
+              <div className="sticky top-0 flex items-center gap-2 border-b bg-popover px-4 py-2 text-xs font-semibold text-destructive">
+                <AlertTriangle className="size-3.5" /> Overdue jobs · {overdueCount}
+              </div>
+              <div className="divide-y">
+                {overdueJobs.map((job) => (
+                  <button key={job.id} type="button" className="flex w-full flex-col gap-0.5 px-4 py-3 text-left hover:bg-muted/50" onClick={() => {
+                    setOpen(false);
+                    router.push(`/projects/${job.project_id}`);
+                  }}>
+                    <span className="truncate text-sm font-medium">{job.title}</span>
+                    <span className="text-xs text-muted-foreground">Due {new Date(`${job.scheduled_completion}T00:00:00`).toLocaleDateString(undefined, { dateStyle: "medium" })}</span>
+                  </button>
+                ))}
+                {overdueCount > overdueJobs.length && (
+                  <button type="button" className="w-full px-4 py-3 text-left text-xs font-medium text-primary hover:bg-muted/50" onClick={() => {
+                    setOpen(false);
+                    router.push("/jobs");
+                  }}>View all jobs ({overdueCount} overdue)</button>
+                )}
+              </div>
+            </section>
+          )}
+          {notesError && <p className="px-4 py-3 text-xs text-destructive">Could not load note notifications.</p>}
+          {items.length > 0 && (
+            <section aria-label="Recent notes">
+              <div className="sticky top-0 border-y bg-popover px-4 py-2 text-xs font-semibold">Recent notes</div>
+              <div className="divide-y">
+                {items.map((notification) => (
               <button
                 key={notification.id}
                 type="button"
@@ -138,9 +199,14 @@ export function NoteNotifications({ userId }: { userId: string }) {
                   {new Date(notification.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                 </time>
               </button>
-            ))}
-          </div>
-        )}
+                ))}
+              </div>
+            </section>
+          )}
+          {!overdueError && !notesError && overdueJobs.length === 0 && items.length === 0 && (
+            <p className="px-4 py-6 text-sm text-muted-foreground">No notifications right now.</p>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   );

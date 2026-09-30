@@ -42,6 +42,7 @@ export function ToggleJobCompleteButton({
           toast.success(
             isCompleted ? "Job marked as incomplete." : "Job marked as complete.",
           );
+          window.dispatchEvent(new Event("jobsyte:jobs-changed"));
           router.refresh();
         });
       }}

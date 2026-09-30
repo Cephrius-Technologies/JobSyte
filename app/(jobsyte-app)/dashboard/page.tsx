@@ -10,23 +10,16 @@ import { redirect } from "next/navigation";
 import {
   CalendarDays,
   CheckCircle2,
-  Clock,
   DollarSign,
   FolderKanban,
   TrendingUp,
-  AlertTriangle,
-  BarChart3,
-  Building2,
   ChevronRight,
-  Home,
-  MapPin,
-  UserRound,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
 import { MonthJobsCalendar } from "@/components/dashboard/month-jobs-calendar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardHeader,
@@ -34,8 +27,6 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { ToggleJobCompleteButton } from "@/components/dashboard/toggle-job-complete-button";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCompanyId } from "@/lib/active-company";
@@ -63,6 +54,35 @@ function money(cents: number) {
     currency: "USD",
   });
 }
+
+function DashboardSummaryCard({ href, icon, label, value, description, detail }: {
+  href: string;
+  icon: ReactNode;
+  label: string;
+  value: string | number;
+  description: string;
+  detail: ReactNode;
+}) {
+  return (
+    <Link href={href} className="group min-w-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Card className="h-full gap-0 p-4 transition-colors hover:border-primary/40 hover:bg-primary/3 sm:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <span className="text-sm font-medium text-muted-foreground">{label}</span>
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            {icon}
+          </span>
+        </div>
+        <div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">{value}</div>
+        <p className="mb-4 mt-1 text-xs text-muted-foreground">{description}</p>
+        <div className="mt-auto flex items-center justify-between gap-2 border-t pt-3 text-xs text-muted-foreground">
+          <span className="min-w-0 truncate">{detail}</span>
+          <ChevronRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
 export const metadata = {
   robots: {
     index: false,
@@ -158,9 +178,7 @@ export default async function DashboardPage() {
       .lte("invoice_date", monthEnd),
     supabase
       .from("jobs")
-      .select(
-        "id, title, scheduled_completion, is_completed, project_id, superintendent",
-      )
+      .select("id, title, scheduled_completion, is_completed, project_id")
       .eq("company_id", companyId)
       .eq("is_completed", false)
       .is("deleted_at", null)
@@ -230,25 +248,10 @@ export default async function DashboardPage() {
       ...j,
       project_address:
         projectMap.get(j.project_id)?.project_address ?? "Unknown project",
-      builder_name: projectMap.get(j.project_id)?.builder_name ?? null,
-      subdivision: projectMap.get(j.project_id)?.subdivision ?? null,
     }),
   );
 
   const monthName = format(monthStartDate, "MMMM yyyy");
-
-  // Derived stats for new widgets
-  const completionRate =
-    openJobsCount + completedThisMonth > 0
-      ? Math.round(
-        (completedThisMonth / (openJobsCount + completedThisMonth)) * 100,
-      )
-      : 0;
-
-  const overdueJobs = upcomingJobs.filter((j) => {
-    if (!j.scheduled_completion) return false;
-    return j.scheduled_completion < today;
-  });
 
   const totalPipelineValue = ((monthJobsRes.data ?? []) as JobSummaryRow[])
     .filter((j) => !j.is_completed)
@@ -261,157 +264,44 @@ export default async function DashboardPage() {
       {/* ─── Page heading ─── */}
       <PageHeader title="Dashboard" description="Your schedule, active projects, and billing at a glance." className="pb-6" />
 
-      {/* ═══════════════════════════════════════════════
-          ROW 1 — KPI stat cards (fixed height, no scroll)
-         ═══════════════════════════════════════════════ */}
-      <div className="shrink-0 grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4 pb-6">
-        {/* Schedule Focus */}
-        <Card className="border-border" size="sm">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
-                <CalendarDays className="size-4 text-muted-foreground" />
-              </div>
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Schedule Focus
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold tracking-tight tabular-nums">
-              {dueTodayCount}
-            </div>
-            <p className="text-xs text-muted-foreground">Jobs due today</p>
-            <Separator className="my-3" />
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <Clock className="size-3.5 text-muted-foreground" />
-              <span>
-                <span className="font-semibold">{currentWeekJobsCount}</span>{" "}
-                incomplete this week
-              </span>
-            </div>
-            <p className="mt-0.5 pl-5 text-[11px] text-muted-foreground">
-              {format(weekStartDate, "MMM d")} –{" "}
-              {format(weekEndDate, "MMM d")}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Work Pipeline */}
-        <Card className="border-border" size="sm">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
-                <TrendingUp className="size-4 text-muted-foreground" />
-              </div>
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Work Pipeline
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold tracking-tight tabular-nums">
-              {openJobsCount}
-            </div>
-            <p className="text-xs text-muted-foreground">Open jobs</p>
-            <Separator className="my-3" />
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <CheckCircle2 className="size-3.5 text-green-600 dark:text-green-400" />
-              <span>
-                <span className="font-semibold">{completedThisMonth}</span>{" "}
-                completed in {format(monthStartDate, "MMMM")}
-              </span>
-            </div>
-            <div className="mt-2">
-              <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Completion rate</span>
-                <span className="font-medium">{completionRate}%</span>
-              </div>
-              <Progress value={completionRate} className="h-1.5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Projects */}
-        <Card className="border-border" size="sm">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
-                <FolderKanban className="size-4 text-muted-foreground" />
-              </div>
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Active Projects
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold tracking-tight tabular-nums">
-              {projects.length}
-            </div>
-            <p className="text-xs text-muted-foreground">Active projects</p>
-            <Separator className="my-3" />
-            {totalPipelineValue > 0 ? (
-              <div className="flex items-center gap-1.5 text-xs sm:text-sm">
-                <BarChart3 className="size-3.5 text-muted-foreground" />
-                <span>
-                  <span className="font-semibold">
-                    {money(totalPipelineValue)}
-                  </span>{" "}
-                  pipeline value
-                </span>
-              </div>
-            ) : (
-              <Link href="/projects">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-border hover:bg-muted"
-                >
-                  Open Projects
-                </Button>
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Invoices this month */}
-        <Card className="border-border" size="sm">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
-                <DollarSign className="size-4 text-muted-foreground" />
-              </div>
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Invoices · {monthName}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold tracking-tight tabular-nums">
-              {invoiceMonthCount}
-            </div>
-            <p className="text-xs text-muted-foreground">Invoices issued</p>
-            <Separator className="my-3" />
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <DollarSign className="size-3.5 text-muted-foreground" />
-              <span>
-                Total:{" "}
-                <span className="font-semibold">
-                  {money(invoiceMonthTotal)}
-                </span>
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 pb-6 sm:grid-cols-2 xl:grid-cols-4">
+        <DashboardSummaryCard
+          href="/calendar"
+          icon={<CalendarDays className="size-4" />}
+          label="Due today"
+          value={dueTodayCount}
+          description="Incomplete jobs due today"
+          detail={`${currentWeekJobsCount} due this week · ${format(weekStartDate, "MMM d")}–${format(weekEndDate, "MMM d")}`}
+        />
+        <DashboardSummaryCard
+          href="/jobs"
+          icon={<TrendingUp className="size-4" />}
+          label="Open jobs"
+          value={openJobsCount}
+          description="Work currently in progress"
+          detail={<span className="inline-flex items-center gap-1"><CheckCircle2 className="size-3.5" />{completedThisMonth} completed in {format(monthStartDate, "MMMM")}</span>}
+        />
+        <DashboardSummaryCard
+          href="/projects"
+          icon={<FolderKanban className="size-4" />}
+          label="Active projects"
+          value={projects.length}
+          description="Projects across your company"
+          detail={totalPipelineValue > 0 ? `${money(totalPipelineValue)} scheduled pipeline` : "View all projects"}
+        />
+        <DashboardSummaryCard
+          href="/invoices"
+          icon={<DollarSign className="size-4" />}
+          label={`Invoices · ${monthName}`}
+          value={invoiceMonthCount}
+          description="Invoices issued this month"
+          detail={`${money(invoiceMonthTotal)} total invoiced`}
+        />
       </div>
 
-      {/* ═══════════════════════════════════════════════
-          ROW 2 — Below xl, panels stack and the app shell owns page scrolling.
-          At xl and above, panels fit the viewport and scroll internally.
-         ═══════════════════════════════════════════════ */}
-      <div className="grid gap-4  xl:flex-1 xl:grid-cols-[2fr_1fr] ">
-        <div className="flex flex-col gap-4   xl:pr-1">
-          <Card className="flex min-h-[40rem] flex-col border-border  xl:flex-1">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+        <div className="min-w-0">
+          <Card className="flex min-h-[40rem] flex-col border-border">
             <CardHeader className="shrink-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -433,140 +323,44 @@ export default async function DashboardPage() {
               />
             </CardContent>
           </Card>
-
         </div>
 
-        {/* Removed Quick Actions , Month overview and Futrure Ideas widget */}
-
-        {/* Right column — Jobs this week + Overdue */}
-        <div className="flex flex-col gap-4 ">
-          {/* Overdue alert */}
-          {overdueJobs.length > 0 && (
-            <Card className="border-destructive/30 bg-destructive/5 shrink-0" size="sm">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="size-4 text-destructive" />
-                  <CardTitle className="text-destructive">
-                    Overdue Jobs
-                  </CardTitle>
-                </div>
-                <CardDescription>
-                  {overdueJobs.length} job{overdueJobs.length === 1 ? "" : "s"}{" "}
-                  past scheduled date
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {overdueJobs.slice(0, 3).map((job) => (
-                    <div
-                      key={job.id}
-                      className="flex items-start justify-between gap-2 rounded-md border border-destructive/20 bg-destructive/5 p-2 text-sm"
-                    >
-                      <div className="min-w-0">
-                        <div className="truncate font-medium">{job.title}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Due: {job.scheduled_completion}
-                        </div>
-                      </div>
-                      <Badge variant="destructive" className="shrink-0 text-[10px]">
-                        Overdue
-                      </Badge>
+        <Card className="min-w-0 gap-0 border-border py-0">
+          <div className="flex items-center justify-between gap-3 border-b px-4 py-4">
+            <div>
+              <h2 className="font-semibold">Jobs This Week</h2>
+              <p className="text-xs text-muted-foreground">Incomplete jobs · {format(weekStartDate, "MMM d")}–{format(weekEndDate, "MMM d")}</p>
+            </div>
+            <Badge variant="secondary" className="shrink-0">{upcomingJobs.length}</Badge>
+          </div>
+          {upcomingJobs.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">No incomplete jobs scheduled this week.</p>
+          ) : (
+            <div className="max-h-[32rem] divide-y overflow-y-auto">
+              {upcomingJobs.map((job) => {
+                const date = new Date(`${job.scheduled_completion}T00:00:00`);
+                return (
+                  <div key={job.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <div className="flex w-10 shrink-0 flex-col items-center rounded-md bg-muted px-1 py-1 text-xs text-muted-foreground">
+                      <span>{format(date, "EEE")}</span>
+                      <strong className="text-base leading-tight text-foreground">{format(date, "d")}</strong>
                     </div>
-                  ))}
-                  {overdueJobs.length > 3 && (
-                    <p className="text-xs text-muted-foreground">
-                      +{overdueJobs.length - 3} more
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/projects/${job.project_id}`} className="block truncate text-sm font-medium hover:text-primary hover:underline">
+                        {job.title}
+                      </Link>
+                      <p className="truncate text-xs text-muted-foreground">{job.project_address}</p>
+                    </div>
+                    <ToggleJobCompleteButton jobId={job.id} isCompleted={job.is_completed} compact />
+                  </div>
+                );
+              })}
+            </div>
           )}
-
-          {/* Jobs This Week */}
-          <Card className="mb-20 flex max-h-[60vh] min-h-0 flex-1 flex-col border-border md:mb-0 xl:max-h-none">
-            <CardHeader className="shrink-0">
-              <div className="flex items-center justify-between ">
-                <div>
-                  <CardTitle className="text-foreground">
-                    Jobs This Week
-                  </CardTitle>
-                  <CardDescription>
-                    Incomplete jobs scheduled for this week.
-                  </CardDescription>
-                </div>
-                <Badge
-                  variant="outline"
-                  className="border-border bg-muted"
-                >
-                  {upcomingJobs.length}
-                </Badge>
-              </div>
-            </CardHeader>
-              <CardContent className="min-h-0 flex-1 overflow-y-auto pr-1">
-              {upcomingJobs.length === 0 ? (
-                <div className="rounded-md border p-3 text-center text-sm text-muted-foreground">
-                  No incomplete jobs this week 🎉
-                </div>
-              ) : (
-                <div className="space-y-3 pr-1">
-                  {upcomingJobs.map((job) => (
-                    <div
-                      key={job.id}
-                      className="rounded-lg border border-border bg-primary/3 p-3 dark:bg-primary/7"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 space-y-2">
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium wrap-break-word">
-                              {job.title}
-                            </div>
-                            <div className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                              <MapPin className="size-3.5" />
-                              {job.project_address}
-                            </div>
-                          </div>
-                          {/* Match the day-detail cards so the right rail uses its height
-                              for real job context instead of sparse one-line rows. */}
-                          <div className="grid gap-1.5 text-xs text-muted-foreground">
-                            <div className="inline-flex items-center gap-1">
-                              <Building2 className="size-3.5" />
-                              {job.builder_name ?? "Unknown builder"}
-                            </div>
-                            <div className="inline-flex items-center gap-1">
-                              <Home className="size-3.5" />
-                              {job.subdivision ?? "Unassigned subdivision"}
-                            </div>
-                            {job.superintendent && (
-                              <div className="inline-flex items-center gap-1 wrap-break-word">
-                                <UserRound className="size-3.5" />
-                                Supt / GC: {job.superintendent}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                            <span>{job.scheduled_completion}</span>
-                            <Link
-                              href={`/projects/${job.project_id}`}
-                              className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:text-muted-foreground"
-                            >
-                              Open project
-                              <ChevronRight className="size-3.5" />
-                            </Link>
-                          </div>
-                        </div>
-                        <ToggleJobCompleteButton
-                          jobId={job.id}
-                          isCompleted={job.is_completed}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+          <Link href="/jobs" className="flex items-center justify-between border-t px-4 py-3 text-xs font-medium text-primary hover:bg-muted/50">
+            View all jobs <ChevronRight className="size-4" />
+          </Link>
+        </Card>
       </div>
     </div>
   );
