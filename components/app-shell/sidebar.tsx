@@ -4,7 +4,7 @@ export function Sidebar() {
   return (
     <div
           data-app-shell-sidebar
-          className="hidden md:sticky md:top-0 md:block md:h-dvh md:shrink-0 md:self-start md:p-2"
+          className="hidden md:block md:h-dvh md:shrink-0 md:p-2"
         >
       <DesktopSidebar />
     </div>

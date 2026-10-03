@@ -109,7 +109,7 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <BreadcrumbSetter crumbs={[{ label: "Settings", href: "/settings" }]} />
       <SettingsPageClient
         initialProfile={{

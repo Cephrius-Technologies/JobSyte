@@ -190,7 +190,7 @@ export function SettingsPageClient({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4 pb-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground">
@@ -198,9 +198,8 @@ export function SettingsPageClient({
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
         <SettingsAccountDetailsCard account={account} />
-
         <SettingsAppearanceCard />
       </div>
 
@@ -208,46 +207,48 @@ export function SettingsPageClient({
         <SettingsReleaseNotesCard />
       </div>
 
-      <SettingsBusinessProfileCard
-        companyName={companyName}
-        setCompanyName={setCompanyName}
-        phone={phone}
-        setPhone={setPhone}
-        address={address}
-        setAddress={setAddress}
-        savingProfile={savingProfile}
-        onSaveProfile={onSaveProfile}
-      />
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+        <SettingsBusinessProfileCard
+          companyName={companyName}
+          setCompanyName={setCompanyName}
+          phone={phone}
+          setPhone={setPhone}
+          address={address}
+          setAddress={setAddress}
+          savingProfile={savingProfile}
+          onSaveProfile={onSaveProfile}
+        />
+        <SettingsWeatherCard initialCityName={initialPreferences.weatherCityName} />
+      </div>
 
-      <SettingsPreferencesCard
-        emailInvoiceReminders={emailInvoiceReminders}
-        setEmailInvoiceReminders={setEmailInvoiceReminders}
-        weeklySummary={weeklySummary}
-        setWeeklySummary={setWeeklySummary}
-        productUpdates={productUpdates}
-        setProductUpdates={setProductUpdates}
-        defaultDueDays={defaultDueDays}
-        setDefaultDueDays={setDefaultDueDays}
-        savingPreferences={savingPreferences}
-        onSavePreferences={onSavePreferences}
-      />
-
-      <SettingsWeatherCard initialCityName={initialPreferences.weatherCityName} />
+      <div className="grid min-w-0 gap-4 2xl:grid-cols-2">
+        <SettingsPreferencesCard
+          emailInvoiceReminders={emailInvoiceReminders}
+          setEmailInvoiceReminders={setEmailInvoiceReminders}
+          weeklySummary={weeklySummary}
+          setWeeklySummary={setWeeklySummary}
+          productUpdates={productUpdates}
+          setProductUpdates={setProductUpdates}
+          defaultDueDays={defaultDueDays}
+          setDefaultDueDays={setDefaultDueDays}
+          savingPreferences={savingPreferences}
+          onSavePreferences={onSavePreferences}
+        />
+        <SettingsSecurityCard
+          newEmail={newEmail}
+          setNewEmail={setNewEmail}
+          savingEmail={savingEmail}
+          onUpdateEmail={onUpdateEmail}
+          nextPassword={nextPassword}
+          setNextPassword={setNextPassword}
+          confirmPassword={confirmPassword}
+          setConfirmPassword={setConfirmPassword}
+          savingPassword={savingPassword}
+          onUpdatePassword={onUpdatePassword}
+        />
+      </div>
 
       <SettingsProjectPresetsCard initialPresets={initialProjectPresets} />
-
-      <SettingsSecurityCard
-        newEmail={newEmail}
-        setNewEmail={setNewEmail}
-        savingEmail={savingEmail}
-        onUpdateEmail={onUpdateEmail}
-        nextPassword={nextPassword}
-        setNextPassword={setNextPassword}
-        confirmPassword={confirmPassword}
-        setConfirmPassword={setConfirmPassword}
-        savingPassword={savingPassword}
-        onUpdatePassword={onUpdatePassword}
-      />
 
       <SettingsDataSessionCard
         signingOutAll={signingOutAll}

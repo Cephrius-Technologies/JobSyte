@@ -31,7 +31,7 @@ export function SettingsPreferencesCard({
   onSavePreferences,
 }: SettingsPreferencesCardProps) {
   return (
-    <Card className="space-y-5 p-5">
+    <Card className="min-w-0 gap-4 p-5">
       <div className="flex items-center gap-2 text-lg font-semibold">
         <Bell className="size-4 text-muted-foreground" />
         Preferences

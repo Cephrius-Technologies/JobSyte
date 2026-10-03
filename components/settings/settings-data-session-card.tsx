@@ -13,7 +13,7 @@ export function SettingsDataSessionCard({
   onSignOutEverywhere,
 }: SettingsDataSessionCardProps) {
   return (
-    <Card className="space-y-4 border-destructive/40 p-5">
+    <Card className="min-w-0 gap-4 border-destructive/40 p-5">
       <div className="text-lg font-semibold text-destructive">
         Data & Session
       </div>

@@ -183,7 +183,7 @@ export function SettingsProjectPresetsCard({
   const totalJobs = presets.reduce((sum, preset) => sum + preset.jobs.length, 0);
 
   return (
-    <Card className="space-y-4 p-5">
+    <Card className="min-w-0 gap-4 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-lg font-semibold">
@@ -200,8 +200,8 @@ export function SettingsProjectPresetsCard({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(13rem,0.8fr)_minmax(0,1.2fr)]">
-        <div className="space-y-2">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(13rem,0.8fr)_minmax(0,1.2fr)]">
+        <div className="min-w-0 space-y-2">
           <Button
             type="button"
             variant="outline"
@@ -230,7 +230,7 @@ export function SettingsProjectPresetsCard({
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{preset.name}</span>
+                    <span className="min-w-0 break-words font-medium">{preset.name}</span>
                     <Badge variant="outline">{preset.jobs.length}</Badge>
                   </div>
                 </button>
@@ -239,7 +239,7 @@ export function SettingsProjectPresetsCard({
           </div>
         </div>
 
-        <div className="space-y-4 rounded-lg border border-border/80 p-3">
+        <div className="min-w-0 space-y-4 rounded-lg border border-border/80 p-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-1">
               <Label htmlFor="project-preset-name">Preset Name</Label>

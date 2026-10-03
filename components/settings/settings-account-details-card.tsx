@@ -29,7 +29,7 @@ export function SettingsAccountDetailsCard({
   account,
 }: SettingsAccountDetailsCardProps) {
   return (
-    <Card className="space-y-4 p-5">
+    <Card className="min-w-0 gap-4 p-5">
       <div className="flex items-center gap-2 text-lg font-semibold">
         <Info className="size-4 text-muted-foreground" />
         Account Details
@@ -38,7 +38,7 @@ export function SettingsAccountDetailsCard({
       <div className="space-y-2 text-sm">
         <div>
           <div className="font-medium text-muted-foreground">Current Email</div>
-          <div className="text-muted-foreground">{account.email}</div>
+          <div className="break-all text-muted-foreground">{account.email}</div>
         </div>
         <div>
           <div className="font-medium text-muted-foreground">Account Created</div>

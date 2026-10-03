@@ -51,7 +51,7 @@ export function SettingsWeatherCard({ initialCityName }: { initialCityName?: str
   }
 
   return (
-    <Card className="space-y-5 p-5">
+    <Card className="min-w-0 gap-4 p-5">
       <div className="flex items-center gap-2 text-lg font-semibold">
         <CloudSun className="size-5 text-primary" aria-hidden="true" />
         Weather Location
@@ -70,9 +70,10 @@ export function SettingsWeatherCard({ initialCityName }: { initialCityName?: str
       </div>
       <div className="space-y-2">
         <Label htmlFor="weather-city-search">Search cities</Label>
-        <form onSubmit={(event) => { event.preventDefault(); void onSearch(); }} className="flex gap-2">
+        <form onSubmit={(event) => { event.preventDefault(); void onSearch(); }} className="flex min-w-0 gap-2">
           <Input
             id="weather-city-search"
+            className="min-w-0 flex-1"
             value={query}
             onChange={(event) => { setQuery(event.target.value); setCities([]); setSearched(false); }}
             placeholder="City, state or country"
