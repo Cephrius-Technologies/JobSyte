@@ -128,6 +128,7 @@ export default async function SettingsPage() {
           weeklySummary: settings.weekly_summary,
           productUpdates: settings.product_updates,
           defaultDueDays: settings.default_due_days,
+          weatherCityName: settings.weather_city_name,
         }}
         initialProjectPresets={projectPresets}
       />

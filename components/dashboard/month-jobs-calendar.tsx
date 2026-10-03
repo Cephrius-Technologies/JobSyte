@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { format, isSameMonth, isValid, parse, startOfMonth } from "date-fns";
 import {
   Building2,
-  CheckCircle2,
   ChevronRight,
-  FolderKanban,
   Home,
   MapPin,
   UserRound,
@@ -104,15 +102,13 @@ export function MonthJobsCalendar({
   // Selected date handling stays inside the current month now that future-month
   // navigation is intentionally disabled.
   const initialSelectedDate = useMemo(() => {
-    if (jobsByDate.has(todayKey)) {
-      const parsedToday = parseYmd(todayKey);
-      if (isSameMonth(parsedToday, currentMonth)) return parsedToday;
-    }
+    const parsedToday = parseYmd(todayKey);
+    if (isSameMonth(parsedToday, currentMonth)) return parsedToday;
 
     if (firstCurrentMonthJobDate) return firstCurrentMonthJobDate;
 
     return currentMonth;
-  }, [currentMonth, firstCurrentMonthJobDate, jobsByDate, todayKey]);
+  }, [currentMonth, firstCurrentMonthJobDate, todayKey]);
 
   const [selectedDate, setSelectedDate] = useState<Date>(initialSelectedDate);
 
@@ -177,7 +173,6 @@ export function MonthJobsCalendar({
   // stacking the month above the job list there causes the calendar to collide
   // with the detail panel.
   const isSplitLayout = containerWidth >= 600;
-  const shouldStackMetrics = isSplitLayout && calendarRailWidth < 360;
   const shouldLimitDailyJobs = !isSplitLayout;
   const computedCalendarCellSize = useMemo(() => {
     if (!calendarRailWidth) return 42;
@@ -206,10 +201,7 @@ export function MonthJobsCalendar({
             {format(selectedDate, "MMM d")}
           </div>
         </div>
-        <div
-          ref={calendarRailRef}
-          className="flex min-h-0 flex-1 flex-col gap-3 p-3"
-        >
+        <div ref={calendarRailRef} className="flex min-h-0 flex-1 items-center p-3">
           {/* Keep the dashboard widget pinned to one month with no month
               navigation; the dedicated calendar page owns browsing controls. */}
           <Calendar
@@ -259,53 +251,6 @@ export function MonthJobsCalendar({
             }}
           />
 
-          <div
-            className={cn(
-              "grid gap-2",
-              shouldStackMetrics
-                ? "grid-cols-1"
-                : isSplitLayout
-                  ? "grid-cols-3"
-                  : "sm:grid-cols-3",
-            )}
-          >
-            {/* Fill the left panel with high-signal day metrics so larger screens
-                don't leave a dead block of whitespace under the calendar. */}
-            <div className="rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5  dark:border-white/8 dark:bg-white/[0.03]">
-              <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                Completed Today
-              </div>
-              <div className="mt-1 flex items-end justify-between gap-2">
-                <div className="text-lg font-semibold text-foreground">
-                  {completedSelectedJobs}/{selectedJobs.length}
-                </div>
-                <CheckCircle2 className="size-4 text-primary" />
-              </div>
-            </div>
-            <div className="rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5 dark:border-white/8 dark:bg-white/[0.03]">
-              <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                Pipeline
-              </div>
-              <div className="mt-1 flex items-end justify-between gap-2">
-                <div className="text-lg font-semibold text-foreground">
-                  {formatCurrency(selectedDayRevenue)}
-                </div>
-                <FolderKanban className="size-4 text-primary" />
-              </div>
-            </div>
-            <div className="rounded-lg border border-border/80 bg-muted/20 px-3 py-2.5 dark:border-white/8 dark:bg-white/[0.03]">
-              <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                Coverage
-              </div>
-              <div className="mt-1 flex items-end justify-between gap-2">
-                <div className="text-lg font-semibold text-foreground">
-                  {selectedDayProjects} projects | {selectedDayBuilders} builder
-                  {selectedDayBuilders === 1 ? "" : "s"}
-                </div>
-                <Building2 className="size-4 text-primary" />
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -320,9 +265,6 @@ export function MonthJobsCalendar({
                 {format(selectedDate, "EEEE, MMM d, yyyy")}
               </span>
             </div>
-            <div className="mt-0.5 text-xs text-muted-foreground">
-              {completedSelectedJobs}/{selectedJobs.length} complete
-            </div>
           </div>
           <Badge
             variant="outline"
@@ -332,10 +274,16 @@ export function MonthJobsCalendar({
           </Badge>
         </div>
 
+        <div className="flex flex-wrap gap-x-5 gap-y-1.5 border-b border-border/80 px-3 py-2.5 text-xs dark:border-white/8">
+          <span><strong className="font-semibold text-foreground">{completedSelectedJobs}/{selectedJobs.length}</strong> <span className="text-muted-foreground">complete</span></span>
+          <span><strong className="font-semibold text-foreground">{formatCurrency(selectedDayRevenue)}</strong> <span className="text-muted-foreground">pipeline</span></span>
+          <span><strong className="font-semibold text-foreground">{selectedDayProjects}</strong> <span className="text-muted-foreground">project{selectedDayProjects === 1 ? "" : "s"} · {selectedDayBuilders} builder{selectedDayBuilders === 1 ? "" : "s"}</span></span>
+        </div>
+
         {selectedJobs.length === 0 ? (
           // Empty state rendering stays in the details pane so the calendar can
           // keep its place while users browse dates with no scheduled work.
-          <div className="m-3 rounded-lg border border-dashed border-border/80 bg-muted/20 p-4 text-sm text-muted-foreground dark:border-white/10 dark:bg-white/[0.03]">
+          <div className="m-3 flex min-h-28 flex-1 items-center justify-center rounded-lg border border-dashed border-border/80 bg-muted/20 p-4 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/[0.03]">
             No jobs scheduled for this date.
           </div>
         ) : (

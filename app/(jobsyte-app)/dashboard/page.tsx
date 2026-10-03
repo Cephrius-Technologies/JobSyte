@@ -15,10 +15,11 @@ import {
   TrendingUp,
   ChevronRight,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
 import { MonthJobsCalendar } from "@/components/dashboard/month-jobs-calendar";
+import { SevenDayWeather, WeatherForecastSkeleton } from "@/components/dashboard/seven-day-weather";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -27,9 +28,9 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { ToggleJobCompleteButton } from "@/components/dashboard/toggle-job-complete-button";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCompanyId } from "@/lib/active-company";
+import { readPreferenceSettings } from "@/lib/settings/preferences";
 
 type ProjectRow = {
   id: string;
@@ -97,6 +98,7 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   if (userError || !user) redirect("/login");
+  const weatherCityId = readPreferenceSettings(user.user_metadata).weather_city_id;
 
   const companyId = await getActiveCompanyId();
   if (!companyId) redirect("/login");
@@ -105,7 +107,6 @@ export default async function DashboardPage() {
   const today = format(now, "yyyy-MM-dd");
   const weekStartDate = startOfWeek(now, { weekStartsOn: 0 });
   const weekEndDate = endOfWeek(now, { weekStartsOn: 0 });
-  const weekStart = format(weekStartDate, "yyyy-MM-dd");
   const weekEnd = format(weekEndDate, "yyyy-MM-dd");
 
   const monthStartDate = startOfMonth(now);
@@ -121,7 +122,7 @@ export default async function DashboardPage() {
     openJobsCountRes,
     completedMonthCountRes,
     monthInvoicesRes,
-    upcomingJobsRes,
+    companyLocationRes,
   ] = await Promise.all([
     supabase
       .from("projects")
@@ -141,7 +142,7 @@ export default async function DashboardPage() {
       .eq("company_id", companyId)
       .eq("is_completed", false)
       .is("deleted_at", null)
-      .gte("scheduled_completion", weekStart)
+      .gte("scheduled_completion", today)
       .lte("scheduled_completion", weekEnd),
     supabase
       .from("jobs")
@@ -177,14 +178,10 @@ export default async function DashboardPage() {
       .gte("invoice_date", monthStart)
       .lte("invoice_date", monthEnd),
     supabase
-      .from("jobs")
-      .select("id, title, scheduled_completion, is_completed, project_id")
-      .eq("company_id", companyId)
-      .eq("is_completed", false)
-      .is("deleted_at", null)
-      .gte("scheduled_completion", weekStart)
-      .lte("scheduled_completion", weekEnd)
-      .order("scheduled_completion", { ascending: true }),
+      .from("companies")
+      .select("address")
+      .eq("id", companyId)
+      .maybeSingle(),
   ]);
 
   const firstError =
@@ -194,8 +191,7 @@ export default async function DashboardPage() {
     monthJobsRes.error ??
     openJobsCountRes.error ??
     completedMonthCountRes.error ??
-    monthInvoicesRes.error ??
-    upcomingJobsRes.error;
+    monthInvoicesRes.error;
 
   if (firstError) {
     return (
@@ -212,6 +208,10 @@ export default async function DashboardPage() {
 
   const projects = (projectsRes.data ?? []) as ProjectRow[];
   const projectMap = new Map(projects.map((project) => [project.id, project]));
+  const weatherAddresses = [
+    companyLocationRes.data?.address,
+    projects.find((project) => project.project_address?.trim())?.project_address,
+  ].filter((address): address is string => typeof address === "string" && address.trim().length > 0);
 
   const monthJobs = ((monthJobsRes.data ?? []) as JobSummaryRow[])
     .filter((j) => !!j.scheduled_completion)
@@ -243,14 +243,6 @@ export default async function DashboardPage() {
     0,
   );
 
-  const upcomingJobs = ((upcomingJobsRes.data ?? []) as JobSummaryRow[]).map(
-    (j) => ({
-      ...j,
-      project_address:
-        projectMap.get(j.project_id)?.project_address ?? "Unknown project",
-    }),
-  );
-
   const monthName = format(monthStartDate, "MMMM yyyy");
 
   const totalPipelineValue = ((monthJobsRes.data ?? []) as JobSummaryRow[])
@@ -258,7 +250,7 @@ export default async function DashboardPage() {
     .reduce((sum, j) => sum + (j.price_cents ?? 0), 0);
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-1 flex-col">
       <BreadcrumbSetter crumbs={[{ label: "Dashboard", href: "/" }]} />
 
       {/* ─── Page heading ─── */}
@@ -268,10 +260,10 @@ export default async function DashboardPage() {
         <DashboardSummaryCard
           href="/calendar"
           icon={<CalendarDays className="size-4" />}
-          label="Due today"
+          label="Scheduled Today"
           value={dueTodayCount}
-          description="Incomplete jobs due today"
-          detail={`${currentWeekJobsCount} due this week · ${format(weekStartDate, "MMM d")}–${format(weekEndDate, "MMM d")}`}
+          description="Incomplete jobs scheduled today"
+          detail={`${currentWeekJobsCount} scheduled this week · ${format(weekStartDate, "MMM d")}–${format(weekEndDate, "MMM d")}`}
         />
         <DashboardSummaryCard
           href="/jobs"
@@ -299,68 +291,24 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
-        <div className="min-w-0">
-          <Card className="flex min-h-[40rem] flex-col border-border">
-            <CardHeader className="shrink-0">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <CardTitle className="text-foreground">Jobs Calendar</CardTitle>
-                  <CardDescription>
-                    Select a date to review scheduled jobs and completion status.
-                  </CardDescription>
-                </div>
-                <Badge variant="outline" className="border-border bg-muted">
-                  {monthJobs.length} scheduled
-                </Badge>
+      <div className="grid min-h-[30rem] flex-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(19rem,0.9fr)]">
+        <Card className="min-w-0 gap-4 border-border py-4">
+          <CardHeader className="shrink-0 px-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-foreground">Jobs Calendar</CardTitle>
+                <CardDescription>Select a date to review scheduled jobs and completion status.</CardDescription>
               </div>
-            </CardHeader>
-            <CardContent className="min-h-0 flex-1 overflow-hidden">
-              <MonthJobsCalendar
-                jobs={monthJobs}
-                monthStart={monthStart}
-                todayKey={today}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="min-w-0 gap-0 border-border py-0">
-          <div className="flex items-center justify-between gap-3 border-b px-4 py-4">
-            <div>
-              <h2 className="font-semibold">Jobs This Week</h2>
-              <p className="text-xs text-muted-foreground">Incomplete jobs · {format(weekStartDate, "MMM d")}–{format(weekEndDate, "MMM d")}</p>
+              <Badge variant="outline" className="border-border bg-muted">{monthJobs.length} scheduled</Badge>
             </div>
-            <Badge variant="secondary" className="shrink-0">{upcomingJobs.length}</Badge>
-          </div>
-          {upcomingJobs.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">No incomplete jobs scheduled this week.</p>
-          ) : (
-            <div className="max-h-[32rem] divide-y overflow-y-auto">
-              {upcomingJobs.map((job) => {
-                const date = new Date(`${job.scheduled_completion}T00:00:00`);
-                return (
-                  <div key={job.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <div className="flex w-10 shrink-0 flex-col items-center rounded-md bg-muted px-1 py-1 text-xs text-muted-foreground">
-                      <span>{format(date, "EEE")}</span>
-                      <strong className="text-base leading-tight text-foreground">{format(date, "d")}</strong>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <Link href={`/projects/${job.project_id}`} className="block truncate text-sm font-medium hover:text-primary hover:underline">
-                        {job.title}
-                      </Link>
-                      <p className="truncate text-xs text-muted-foreground">{job.project_address}</p>
-                    </div>
-                    <ToggleJobCompleteButton jobId={job.id} isCompleted={job.is_completed} compact />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          <Link href="/jobs" className="flex items-center justify-between border-t px-4 py-3 text-xs font-medium text-primary hover:bg-muted/50">
-            View all jobs <ChevronRight className="size-4" />
-          </Link>
+          </CardHeader>
+          <CardContent className="min-h-0 flex-1 overflow-hidden px-4">
+            <MonthJobsCalendar jobs={monthJobs} monthStart={monthStart} todayKey={today} />
+          </CardContent>
         </Card>
+        <Suspense fallback={<WeatherForecastSkeleton />}>
+          <SevenDayWeather addresses={weatherAddresses} cityId={weatherCityId} />
+        </Suspense>
       </div>
     </div>
   );

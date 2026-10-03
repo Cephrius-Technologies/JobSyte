@@ -21,6 +21,7 @@ import { SettingsSecurityCard } from "@/components/settings/settings-security-ca
 import { SettingsDataSessionCard } from "@/components/settings/settings-data-session-card";
 import { SettingsReleaseNotesCard } from "@/components/settings/settings-release-notes-card";
 import { SettingsProjectPresetsCard } from "@/components/settings/settings-project-presets-card";
+import { SettingsWeatherCard } from "@/components/settings/settings-weather-card";
 import type { ProjectPresetForSettings } from "@/app/(jobsyte-app)/settings/actions";
 
 type SettingsPageClientProps = {
@@ -40,6 +41,7 @@ type SettingsPageClientProps = {
     weeklySummary: boolean;
     productUpdates: boolean;
     defaultDueDays: number;
+    weatherCityName?: string;
   };
   initialProjectPresets: ProjectPresetForSettings[];
 };
@@ -229,6 +231,8 @@ export function SettingsPageClient({
         savingPreferences={savingPreferences}
         onSavePreferences={onSavePreferences}
       />
+
+      <SettingsWeatherCard initialCityName={initialPreferences.weatherCityName} />
 
       <SettingsProjectPresetsCard initialPresets={initialProjectPresets} />
 
