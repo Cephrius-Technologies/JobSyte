@@ -108,15 +108,54 @@ export async function deleteCompany(companyId: string): Promise<DeleteResult> {
   // Use admin client to bypass RLS for cascading deletes
   const admin = createAdminClient();
 
-  // 1. Get all project IDs for this company so we can delete their jobs
-  const { data: projects } = await admin
+  // 1. Remove invoice items before their invoices or referenced jobs.
+  // Process in batches because PostgREST caps the rows returned by a select.
+  while (true) {
+    const { data: invoices, error: loadInvoicesError } = await admin
+      .from("invoices")
+      .select("id")
+      .eq("company_id", companyId)
+      .limit(500);
+
+    if (loadInvoicesError) {
+      return { ok: false, message: `Failed to load invoices: ${loadInvoicesError.message}` };
+    }
+
+    const invoiceIds = (invoices ?? []).map((invoice) => invoice.id);
+    if (invoiceIds.length === 0) break;
+
+    const { error: itemsError } = await admin
+      .from("invoice_items")
+      .delete()
+      .in("invoice_id", invoiceIds);
+
+    if (itemsError) {
+      return { ok: false, message: `Failed to delete invoice items: ${itemsError.message}` };
+    }
+
+    const { error: invoicesError } = await admin
+      .from("invoices")
+      .delete()
+      .in("id", invoiceIds);
+
+    if (invoicesError) {
+      return { ok: false, message: `Failed to delete invoices: ${invoicesError.message}` };
+    }
+  }
+
+  // 2. Get all project IDs for this company so we can delete their jobs
+  const { data: projects, error: loadProjectsError } = await admin
     .from("projects")
     .select("id")
     .eq("company_id", companyId);
 
+  if (loadProjectsError) {
+    return { ok: false, message: `Failed to load projects: ${loadProjectsError.message}` };
+  }
+
   const projectIds = (projects ?? []).map((p) => p.id);
 
-  // 2. Delete jobs belonging to those projects
+  // 3. Delete jobs belonging to those projects
   if (projectIds.length > 0) {
     const { error: jobsError } = await admin
       .from("jobs")
@@ -126,16 +165,6 @@ export async function deleteCompany(companyId: string): Promise<DeleteResult> {
     if (jobsError) {
       return { ok: false, message: `Failed to delete jobs: ${jobsError.message}` };
     }
-  }
-
-  // 3. Delete invoices belonging to this company
-  const { error: invoicesError } = await admin
-    .from("invoices")
-    .delete()
-    .eq("company_id", companyId);
-
-  if (invoicesError) {
-    return { ok: false, message: `Failed to delete invoices: ${invoicesError.message}` };
   }
 
   // 4. Delete projects belonging to this company

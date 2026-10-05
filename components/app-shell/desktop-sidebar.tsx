@@ -48,11 +48,11 @@ export function DesktopSidebar() {
             {" "}
             <a
               href="https://cephrius.com"
-              className="underline hover:text-primary"
+              className="underline hover:text-primary "
             >
               Cephrius Technologies
             </a>
-            <a>© JobSyte</a>
+
           </>
         )}
       </div>
