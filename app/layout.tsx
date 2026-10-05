@@ -46,6 +46,14 @@ export const metadata: Metadata = {
     "builder change order tracking",
     "residential construction software",
     "field crew management software",
+    "Jobsite",
+    "Jobs",
+    "CRM",
+    "Job CRM",
+    "Supply Pro",
+    "Hypen Solutions",
+    "Builder Support",
+    
   ],
   description: defaultDescription,
   alternates: {
