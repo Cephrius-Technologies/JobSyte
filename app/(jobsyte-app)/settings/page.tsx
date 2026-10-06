@@ -72,39 +72,59 @@ export default async function SettingsPage() {
   let projectPresets: ProjectPresetForSettings[] = [];
 
   if (company?.id) {
-    const [presetsRes, jobsRes] = await Promise.all([
-      supabase
-        .from("project_presets")
-        .select("id, name")
-        .eq("company_id", company.id)
-        .is("deleted_at", null)
-        .order("name"),
-      supabase
-        .from("project_preset_jobs")
-        .select("id, preset_id, title, price_cents, sort_order")
-        .order("sort_order", { ascending: true }),
-    ]);
+    const presetsRes = await supabase
+      .from("project_presets")
+      .select("id, name")
+      .eq("company_id", company.id)
+      .is("deleted_at", null)
+      .order("name");
 
-    if (!presetsRes.error && !jobsRes.error) {
-      const jobsByPreset = new Map<string, ProjectPresetForSettings["jobs"]>();
-      for (const job of (jobsRes.data ?? []) as ProjectPresetJobRow[]) {
-        const list = jobsByPreset.get(job.preset_id) ?? [];
-        list.push({
-          id: job.id,
-          title: job.title,
-          price_cents: job.price_cents,
-          sort_order: job.sort_order ?? 0,
-        });
-        jobsByPreset.set(job.preset_id, list);
+    if (!presetsRes.error) {
+      const presets = (presetsRes.data ?? []) as ProjectPresetRow[];
+      const presetIds = presets.map((preset) => preset.id);
+      const jobs: ProjectPresetJobRow[] = [];
+      let jobsError = false;
+      const pageSize = 1000;
+
+      if (presetIds.length > 0) {
+        let offset = 0;
+        while (true) {
+          const { data, error } = await supabase
+            .from("project_preset_jobs")
+            .select("id, preset_id, title, price_cents, sort_order")
+            .in("preset_id", presetIds)
+            .order("sort_order", { ascending: true })
+            .range(offset, offset + pageSize - 1);
+
+          if (error) {
+            jobsError = true;
+            break;
+          }
+          jobs.push(...((data ?? []) as ProjectPresetJobRow[]));
+          if ((data ?? []).length < pageSize) break;
+          offset += pageSize;
+        }
       }
 
-      projectPresets = ((presetsRes.data ?? []) as ProjectPresetRow[]).map(
-        (preset) => ({
+      if (!jobsError) {
+        const jobsByPreset = new Map<string, ProjectPresetForSettings["jobs"]>();
+        for (const job of jobs) {
+          const list = jobsByPreset.get(job.preset_id) ?? [];
+          list.push({
+            id: job.id,
+            title: job.title,
+            price_cents: job.price_cents,
+            sort_order: job.sort_order ?? 0,
+          });
+          jobsByPreset.set(job.preset_id, list);
+        }
+
+        projectPresets = presets.map((preset) => ({
           id: preset.id,
           name: preset.name,
           jobs: jobsByPreset.get(preset.id) ?? [],
-        }),
-      );
+        }));
+      }
     }
   }
 
