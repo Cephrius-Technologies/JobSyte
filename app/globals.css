@@ -219,7 +219,7 @@
   --muted-foreground: #626875;
   --border: #e4e7ec;
   --input: #d8dce3;
-  --ring: #6366f1;
+  --ring: var(--orangeButton);
   --destructive: oklch(0.577 0.245 27.325);
   --success: #15803d;
   --success-muted: #f0fdf4;

@@ -80,7 +80,7 @@ export default function LoginPage() {
           </div>
 
           <Button
-            className="w-full bg-(--orangeButton) text-[#171b35] hover:bg-[#e66300]"
+            className="w-full bg-(--orangeButton) text-white hover:bg-[#e66300]"
             disabled={loading || !email || !password}
             onClick={handlePasswordLogin}
           >
