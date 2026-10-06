@@ -17,8 +17,8 @@ describe("getJobLifecycleStatus", () => {
     expect(getJobLifecycleStatus({ ...baseJob, scheduled_start: "2026-09-25" }, today)).toBe("in-progress");
   });
 
-  it("does not give an unscheduled incomplete job a status", () => {
-    expect(getJobLifecycleStatus(baseJob, today)).toBeNull();
+  it("marks an unscheduled incomplete job not started", () => {
+    expect(getJobLifecycleStatus(baseJob, today)).toBe("not-started");
   });
 
   it("lets completion override the scheduled start date", () => {

@@ -13,9 +13,9 @@ const baseJob = {
 };
 
 describe("JobStatusBadges", () => {
-  it("renders no lifecycle badge for an undated job", () => {
-    const { container } = render(<JobStatusBadges job={baseJob} today="2026-09-26" />);
-    expect(container).toBeEmptyDOMElement();
+  it("shows Not Started for an undated job", () => {
+    render(<JobStatusBadges job={baseJob} today="2026-09-26" />);
+    expect(screen.getByText("Not Started")).toBeInTheDocument();
   });
 
   it("shows Not Started for a future start date", () => {

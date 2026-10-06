@@ -11,6 +11,28 @@ export type ReleaseNote = {
 // New releases every tuesday (Or whenever I finish a batch of features and fixes that feel worth sharing)
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "v1.0.0",
+    releasedOn: "Oct 5, 2026",
+    majorAdditions: [
+      "Added an All Jobs page with company-wide job management, status filters, sorting, pagination, formatted job IDs, and overdue indicators.",
+      "Added project notes with activity notifications, overdue job alerts, and controls to clear notifications across sessions.",
+      "Added a seven-day weather forecast on the dashboard with a city selector in Settings.",
+      "Added builder-wide invoice creation so completed jobs from multiple projects can be billed together.",
+    ],
+    changes: [
+      "Redesigned the app shell, dashboard, projects, invoices, authentication, and workforce pages for clearer navigation and better mobile layouts.",
+      "Expanded project tools with sortable columns, street group renaming, address directions, and improved project details and loading states.",
+      "Improved invoice and job workflows with clearer payment states, completion controls, and more consistent navigation after invoice creation.",
+      "Refined Settings with responsive cards, appearance controls, company branding, and weather preferences.",
+      "Updated site branding and search metadata.",
+    ],
+    bugFixes: [
+      "Fixed company deletion when invoice items still reference jobs by removing invoice items and invoices before jobs.",
+      "Fixed invoice pages not refreshing after invoice creation and improved handling for projects without stored map coordinates.",
+      "Improved layout behavior for smaller screens, including project dialogs and invoice pages.",
+    ],
+  },
+  {
     version: "v0.3.0",
     releasedOn: "Jun 2, 2026",
     majorAdditions: [
