@@ -14,7 +14,7 @@ import {
   updatePreferences,
 } from "@/app/(jobsyte-app)/settings/actions";
 import { SettingsAccountDetailsCard } from "@/components/settings/settings-account-details-card";
-import { SettingsAppearanceCard } from "@/components/settings/settings-appearance-card"; 
+import { SettingsAppearanceCard } from "@/components/settings/settings-appearance-card";
 import { SettingsBusinessProfileCard } from "@/components/settings/settings-business-profile-card";
 import { SettingsPreferencesCard } from "@/components/settings/settings-preferences-card";
 import { SettingsSecurityCard } from "@/components/settings/settings-security-card";

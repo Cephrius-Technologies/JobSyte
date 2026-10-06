@@ -1,6 +1,8 @@
 import { Palette } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { ThemeSwitcherWithColors } from "../theme-switcher-withcolors ";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+// Custom accent colors are paused. Restore this picker when they return.
+// import { ThemeSwitcherWithColors } from "../theme-switcher-withcolors ";
 
 export function SettingsAppearanceCard() {
   return (
@@ -11,11 +13,12 @@ export function SettingsAppearanceCard() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Pick the app theme and accent color used across dashboard pages.
+        Choose light, dark, or automatic appearance.
       </p>
 
       <div>
-        <ThemeSwitcherWithColors />
+        <ThemeSwitcher hideLabel={false} />
+        {/* <ThemeSwitcherWithColors /> */}
       </div>
     </Card>
   );

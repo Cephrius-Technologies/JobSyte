@@ -130,7 +130,7 @@ export default function RootLayout({
       suppressHydrationWarning={true}
     >
       <body className="antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <DocumentTitleSync />
           {children}
           <Toaster />
