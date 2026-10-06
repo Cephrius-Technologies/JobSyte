@@ -29,7 +29,7 @@ export default function AuthLayout({
         <div className="space-y-6">
           <h1>Great work starts here</h1>
           <p>
-            From the first job to the final invoice. One organized workspace for your projects, your poeople and everything in between.
+            From the first job to the final invoice. One organized workspace for your projects, your people and everything in between.
           </p>
         </div>
         <p className="text-sm">Built for the way your team works.</p>
