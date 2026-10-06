@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
 import { CompanyProvider, useCompany, type Company } from "@/lib/company-context";
 
 const companies: Company[] = [

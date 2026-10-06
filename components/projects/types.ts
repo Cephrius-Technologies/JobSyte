@@ -4,6 +4,8 @@ export type ProjectBillingStatus = "invoiced" | "paid";
 export type ProjectListItem = {
   id: string;
   project_address: string;
+  project_city: string | null;
+  project_state: string | null;
   builder_name: string | null;
   subdivision: string | null;
   builder_id: string | null;
@@ -23,3 +25,15 @@ export type LookupItem = {
   id: string;
   name: string;
 };
+
+export type EditableProject = Pick<
+  ProjectListItem,
+  | "id"
+  | "project_address"
+  | "project_city"
+  | "project_state"
+  | "builder_name"
+  | "subdivision"
+  | "builder_id"
+  | "subdivision_id"
+>;

@@ -275,6 +275,7 @@ export default async function EmployeesPage() {
         jobs={jobs}
         payments={payments}
         employeePayments={employeePayments}
+        nowIso={new Date().toISOString()}
       />
     </div>
   );

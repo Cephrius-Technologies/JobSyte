@@ -37,6 +37,8 @@ export type ProjectExpense = {
 export type ProjectProfitability = {
   project_id: string;
   project_address: string;
+  project_city: string | null;
+  project_state: string | null;
   builder_name: string | null;
   subdivision: string | null;
   status: ProjectStatus;

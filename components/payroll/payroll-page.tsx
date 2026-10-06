@@ -91,7 +91,7 @@ export type PayrollPayment = {
 };
 
 function money(cents: number) {
-  return (cents / 100).toLocaleString(undefined, {
+  return (cents / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
   });
@@ -105,13 +105,15 @@ function paymentLabel(method: string) {
 }
 
 function formatDateTime(value: string) {
-  return new Date(value).toLocaleString();
+  return new Date(value).toLocaleString("en-US");
 }
 
-function getRangeStart(range: "all" | "30d" | "90d" | "365d") {
+function getRangeStart(range: "all" | "30d" | "90d" | "365d", todayKey: string) {
   if (range === "all") return null;
   const days = range === "30d" ? 30 : range === "90d" ? 90 : 365;
-  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const today = new Date(`${todayKey}T12:00:00`);
+  today.setDate(today.getDate() - days);
+  return today;
 }
 
 function escapeCsv(value: string | number | null | undefined) {
@@ -125,9 +127,11 @@ function escapeCsv(value: string | number | null | undefined) {
 export function PayrollPageClient({
   assignments,
   payments,
+  todayKey,
 }: {
   assignments: PayrollAssignment[];
   payments: PayrollPayment[];
+  todayKey: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -159,7 +163,7 @@ export function PayrollPageClient({
     [assignments, paidJobIds],
   );
   const paidJobsCount = useMemo(() => paidJobIds.size, [paidJobIds]);
-  const rangeStart = useMemo(() => getRangeStart(dateRange), [dateRange]);
+  const rangeStart = useMemo(() => getRangeStart(dateRange, todayKey), [dateRange, todayKey]);
 
   const filteredPayments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -368,7 +372,7 @@ export function PayrollPageClient({
     <div className="space-y-6">
       <HighlightScroller />
       <div>
-        <h1 className="text-2xl font-semibold text-primary">Payroll</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Payroll</h1>
         <p className="text-sm text-muted-foreground">
           Record payments for completed jobs assigned to employees and crews.
         </p>

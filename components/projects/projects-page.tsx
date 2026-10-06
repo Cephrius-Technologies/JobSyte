@@ -4,40 +4,59 @@
 // `app/(jobsyte-app)/(app)/projects/page.tsx`; mutations live in
 // `app/(jobsyte-app)/(app)/projects/actions.ts` and job dialogs in
 // `components/jobs/*`.
-import Image from "next/image";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
+import { useBrowserStoredState } from "@/hooks/use-browser-storage";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   ArrowRight,
   Building2,
   ChevronDown,
   FileText,
-  Hammer,
   Home,
   List,
   ListTodo,
+  MapPin,
   MoreHorizontal,
   Pencil,
   Plus,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { AddJobDialog } from "@/components/jobs/add-job-dialog";
 import { CreateInvoiceDialog } from "@/components/invoices/create-invoice-dialog";
 import { ImportProjectJobsButton } from "@/components/projects/import-project-jobs-button";
 import { NewProjectButton } from "@/components/projects/new-project-button";
+import {
+  getProjectLocationSubtitle,
+  getProjectStreetGroupLabel,
+  getProjectStreetTitle,
+} from "@/components/projects/project-location";
 import type {
   LookupItem,
   ProjectBillingStatus,
   ProjectListItem,
 } from "@/components/projects/types";
-import { QuickJobComplete, type QuickJobItem } from "@/components/projects/quick-job-complete";
+import {
+  QuickJobComplete,
+  type QuickJobItem,
+} from "@/components/projects/quick-job-complete";
 import { QuickJobDrawer } from "@/components/projects/quick-job-drawer";
 import { getProjectJobs } from "@/components/projects/actions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -61,10 +80,13 @@ import {
 import { cn } from "@/lib/utils";
 import { DeleteProjectButton } from "./delete-project-button";
 import { EditProjectDialog } from "./edit-project-dialog";
+import { BuilderGroupActionsMenu } from "./builder-group-actions-menu";
 import { SubdivisionGroupActionsMenu } from "./subdivision-group-actions-menu";
 import { StreetGroupActionsMenu } from "./street-group-actions-menu";
+import { ProjectSortHeader } from "./project-sort-header";
+import { nextProjectSort, sortProjects, type ProjectSort } from "./project-sort";
 
-const PROJECTS_VIEW_STORAGE_KEY = "projects:view";
+import { parseProjectsView, PROJECTS_VIEW_STORAGE_KEY, type ProjectsView as ViewMode } from "./projects-view";
 const PROJECTS_SELECTED_STORAGE_KEY = "projects:selected-project-id";
 const PROJECTS_EXPANDED_SUBDIVISIONS_STORAGE_KEY =
   "projects:expanded-subdivisions";
@@ -73,7 +95,6 @@ const PROJECTS_EXPANDED_STREETS_STORAGE_KEY = "projects:expanded-streets";
 const UNASSIGNED_BUILDER = "__unassigned_builder__";
 const UNASSIGNED_SUBDIVISION = "__unassigned_subdivision__";
 
-type ViewMode = "list" | "grouped";
 type StatusFilter = "all" | ProjectListItem["status"] | ProjectBillingStatus;
 
 type StreetGroup = {
@@ -110,7 +131,7 @@ function formatRelativeTime(value: string | null): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "No activity yet";
 
-  return formatDistanceToNow(date, { addSuffix: true });
+  return format(date, "MMM d, yyyy");
 }
 
 function statusLabel(status: ProjectListItem["status"]): string {
@@ -125,32 +146,28 @@ function billingStatusLabel(status: ProjectBillingStatus): string {
 }
 
 function ProjectStatusBadges({ project }: { project: ProjectListItem }) {
-  const lifecycleClassName =
-    project.status === "completed"
-      ? "border-green-300 bg-green-100 text-green-800"
-      : project.status === "not-started"
-        ? "border-slate-300 bg-slate-100 text-slate-700"
-        : "border-blue-300 bg-blue-100 text-blue-800";
-
   return (
-    <>
-      <Badge variant="outline" className={lifecycleClassName}>
+    <span className="inline-flex flex-wrap gap-1.5">
+      <StatusBadge
+        tone={
+          project.status === "completed"
+            ? "success"
+            : project.status === "not-started"
+              ? "neutral"
+              : "info"
+        }
+      >
         {statusLabel(project.status)}
-      </Badge>
+      </StatusBadge>
       {project.billing_statuses.map((status) => (
-        <Badge
+        <StatusBadge
           key={status}
-          variant="outline"
-          className={
-            status === "paid"
-              ? "border-emerald-300 bg-emerald-100 text-emerald-800"
-              : "border-violet-300 bg-violet-50 text-violet-700"
-          }
+          tone={status === "paid" ? "success" : "neutral"}
         >
           {billingStatusLabel(status)}
-        </Badge>
+        </StatusBadge>
       ))}
-    </>
+    </span>
   );
 }
 
@@ -176,14 +193,35 @@ function parseStoredKeys(raw: string | null): string[] | null {
   }
 }
 
-function getStreetFolderLabel(projectAddress: string): string {
-  const normalized = projectAddress.trim().replace(/\s+/g, " ");
-  if (!normalized) return "Unassigned Street";
+function serializeStoredKeys(value: string[] | null) {
+  return value === null ? null : JSON.stringify(value);
+}
 
-  const match = normalized.match(/^\d+\s+(.+)$/);
-  if (match?.[1]) return match[1].trim();
+function getProjectGroupKeys(project: ProjectListItem) {
+  const subdivisionLabel =
+    project.subdivision?.trim() || "Unassigned Subdivision";
+  const subdivisionKey =
+    project.subdivision_id ??
+    (project.subdivision?.trim()
+      ? `subdivision:${subdivisionLabel.toLowerCase()}`
+      : UNASSIGNED_SUBDIVISION);
+  const builderLabel = project.builder_name?.trim() || "Unassigned Builder";
+  const builderKey = `${subdivisionKey}::${
+    project.builder_id ??
+    (project.builder_name?.trim()
+      ? `builder:${builderLabel.toLowerCase()}`
+      : UNASSIGNED_BUILDER)
+  }`;
+  const streetLabel = getProjectStreetGroupLabel(project.project_address);
 
-  return normalized;
+  return {
+    subdivisionLabel,
+    subdivisionKey,
+    builderLabel,
+    builderKey,
+    streetLabel,
+    streetKey: `${builderKey}::${streetLabel.toLowerCase()}`,
+  };
 }
 
 function ProjectCardActionsDropdown({
@@ -205,14 +243,14 @@ function ProjectCardActionsDropdown({
 
   return (
     <>
-      <DropdownMenu >
+      <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
             variant="outline"
             size="sm"
             aria-label="Project actions"
-            className="cursor-pointer gap-2 border-primary/30 hover:bg-primary/10"
+            className="cursor-pointer gap-2 border-border hover:bg-muted"
             onClick={(event) => event.stopPropagation()}
           >
             <MoreHorizontal className="size-4" />
@@ -220,7 +258,8 @@ function ProjectCardActionsDropdown({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem className="cursor-pointer"
+          <DropdownMenuItem
+            className="cursor-pointer"
             onSelect={(event) => {
               event.preventDefault();
               setEditOpen(true);
@@ -229,7 +268,8 @@ function ProjectCardActionsDropdown({
             <Pencil className="size-4" />
             Edit Project
           </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer"
+          <DropdownMenuItem
+            className="cursor-pointer"
             onSelect={(event) => {
               event.preventDefault();
               setAddJobOpen(true);
@@ -240,7 +280,8 @@ function ProjectCardActionsDropdown({
           </DropdownMenuItem>
           {/* Quick Complete button only visible when selected project sidebar is not visible (< xl) */}
           <div className="xl:hidden">
-            <DropdownMenuItem className="cursor-pointer"
+            <DropdownMenuItem
+              className="cursor-pointer"
               onSelect={(event) => {
                 event.preventDefault();
                 onQuickComplete?.(project.id);
@@ -260,7 +301,8 @@ function ProjectCardActionsDropdown({
               View Jobs
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer"
+          <DropdownMenuItem
+            className="cursor-pointer"
             onSelect={(event) => {
               event.preventDefault();
               setCreateInvoiceOpen(true);
@@ -269,6 +311,18 @@ function ProjectCardActionsDropdown({
             <FileText className="size-4" />
             New Invoice
           </DropdownMenuItem>
+          <DeleteProjectButton
+            projectId={project.id}
+            trigger={
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={(event) => event.preventDefault()}
+              >
+                <Trash2 className="size-4" />
+                Delete Project
+              </DropdownMenuItem>
+            }
+          />
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -307,59 +361,53 @@ export function ProjectsPageClient({
   const [builderFilter, setBuilderFilter] = useState("all");
   const [subdivisionFilter, setSubdivisionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [view, setView] = useState<ViewMode>(() => {
-    if (typeof window === "undefined") return "list";
-    const savedView = window.localStorage.getItem(PROJECTS_VIEW_STORAGE_KEY);
-    if (savedView === "list" || savedView === "grouped") return savedView;
-    if (savedView === "grid" || savedView === "cards") return "list";
-    if (savedView === "table") return "list";
-    return "list";
+  const [sort, setSort] = useState<ProjectSort>({ key: "updated", direction: "desc" });
+  const [view, setView] = useBrowserStoredState<ViewMode>({
+    key: PROJECTS_VIEW_STORAGE_KEY,
+    defaultValue: "list",
+    parse: parseProjectsView,
+    serialize: (value) => value,
   });
-  const [expandedSubdivisions, setExpandedSubdivisions] = useState<
+  const [expandedSubdivisions, setExpandedSubdivisions] = useBrowserStoredState<
     string[] | null
-  >(() => {
-    if (typeof window === "undefined") return null;
-    return parseStoredKeys(
-      window.localStorage.getItem(PROJECTS_EXPANDED_SUBDIVISIONS_STORAGE_KEY),
-    );
+  >({
+    key: PROJECTS_EXPANDED_SUBDIVISIONS_STORAGE_KEY,
+    defaultValue: null,
+    parse: parseStoredKeys,
+    serialize: serializeStoredKeys,
   });
-  const [expandedBuilders, setExpandedBuilders] = useState<string[] | null>(
-    () => {
-      if (typeof window === "undefined") return null;
-      return parseStoredKeys(
-        window.localStorage.getItem(PROJECTS_EXPANDED_BUILDERS_STORAGE_KEY),
-      );
-    },
-  );
-  const [expandedStreets, setExpandedStreets] = useState<string[] | null>(() => {
-    if (typeof window === "undefined") return null;
-    return parseStoredKeys(
-      window.localStorage.getItem(PROJECTS_EXPANDED_STREETS_STORAGE_KEY),
-    );
+  const [expandedBuilders, setExpandedBuilders] = useBrowserStoredState<
+    string[] | null
+  >({
+    key: PROJECTS_EXPANDED_BUILDERS_STORAGE_KEY,
+    defaultValue: null,
+    parse: parseStoredKeys,
+    serialize: serializeStoredKeys,
   });
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    () => {
-      if (typeof window === "undefined") return projects[0]?.id ?? null;
-      const savedProjectId = window.sessionStorage.getItem(
-        PROJECTS_SELECTED_STORAGE_KEY,
-      );
-      return savedProjectId || projects[0]?.id || null;
-    },
-  );
-  const [selectedProjectJobs, setSelectedProjectJobs] = useState<QuickJobItem[]>([]);
+  const [expandedStreets, setExpandedStreets] = useBrowserStoredState<
+    string[] | null
+  >({
+    key: PROJECTS_EXPANDED_STREETS_STORAGE_KEY,
+    defaultValue: null,
+    parse: parseStoredKeys,
+    serialize: serializeStoredKeys,
+  });
+  const [selectedProjectId, setSelectedProjectId] = useBrowserStoredState<
+    string | null
+  >({
+    key: PROJECTS_SELECTED_STORAGE_KEY,
+    storage: "session",
+    defaultValue: projects[0]?.id ?? null,
+    parse: (raw) => raw || projects[0]?.id || null,
+    serialize: (value) => value,
+  });
+  const [selectedProjectJobs, setSelectedProjectJobs] = useState<
+    QuickJobItem[]
+  >([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [quickCompleteDrawerOpen, setQuickCompleteDrawerOpen] = useState(false);
   const isMobile = useIsMobile();
   const router = useRouter();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!selectedProjectId) {
-      window.sessionStorage.removeItem(PROJECTS_SELECTED_STORAGE_KEY);
-      return;
-    }
-    window.sessionStorage.setItem(PROJECTS_SELECTED_STORAGE_KEY, selectedProjectId);
-  }, [selectedProjectId]);
 
   useEffect(() => {
     if (!selectedProjectId) {
@@ -405,46 +453,6 @@ export function ProjectsPageClient({
     };
   }, [selectedProjectId]);
 
-  useEffect(() => {
-    localStorage.setItem(PROJECTS_VIEW_STORAGE_KEY, view);
-  }, [view]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (expandedSubdivisions === null) {
-      window.localStorage.removeItem(PROJECTS_EXPANDED_SUBDIVISIONS_STORAGE_KEY);
-      return;
-    }
-    window.localStorage.setItem(
-      PROJECTS_EXPANDED_SUBDIVISIONS_STORAGE_KEY,
-      JSON.stringify(expandedSubdivisions),
-    );
-  }, [expandedSubdivisions]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (expandedBuilders === null) {
-      window.localStorage.removeItem(PROJECTS_EXPANDED_BUILDERS_STORAGE_KEY);
-      return;
-    }
-    window.localStorage.setItem(
-      PROJECTS_EXPANDED_BUILDERS_STORAGE_KEY,
-      JSON.stringify(expandedBuilders),
-    );
-  }, [expandedBuilders]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (expandedStreets === null) {
-      window.localStorage.removeItem(PROJECTS_EXPANDED_STREETS_STORAGE_KEY);
-      return;
-    }
-    window.localStorage.setItem(
-      PROJECTS_EXPANDED_STREETS_STORAGE_KEY,
-      JSON.stringify(expandedStreets),
-    );
-  }, [expandedStreets]);
-
   const crewOptions = useMemo(() => {
     const set = new Set<string>();
     for (const project of projects) {
@@ -477,10 +485,13 @@ export function ProjectsPageClient({
         const matchesStatus =
           statusFilter === "all" ||
           statusFilter === project.status ||
-          project.billing_statuses.includes(statusFilter as ProjectBillingStatus);
+          project.billing_statuses.includes(
+            statusFilter as ProjectBillingStatus,
+          );
         const matchesQuery =
           q.length === 0 ||
-          project.project_address.toLowerCase().includes(q) ||
+          getProjectStreetTitle(project).toLowerCase().includes(q) ||
+          getProjectLocationSubtitle(project).toLowerCase().includes(q) ||
           (project.builder_name ?? "").toLowerCase().includes(q) ||
           (project.subdivision ?? "").toLowerCase().includes(q) ||
           project.crew_names.some((name) => name.toLowerCase().includes(q));
@@ -506,6 +517,15 @@ export function ProjectsPageClient({
     subdivisionFilter,
     statusFilter,
   ]);
+
+  const sortedListProjects = useMemo(
+    () => sortProjects(filteredProjects, sort),
+    [filteredProjects, sort],
+  );
+
+  function handleSort(key: ProjectSort["key"]) {
+    setSort((current) => nextProjectSort(current, key));
+  }
 
   const groupedProjects = useMemo<SubdivisionGroup[]>(() => {
     const subdivisionMap = new Map<
@@ -534,21 +554,14 @@ export function ProjectsPageClient({
     >();
 
     for (const project of filteredProjects) {
-      const subdivisionLabel = project.subdivision?.trim() || "Unassigned Subdivision";
-      const subdivisionKey =
-        project.subdivision_id ??
-        (project.subdivision?.trim()
-          ? `subdivision:${subdivisionLabel.toLowerCase()}`
-          : UNASSIGNED_SUBDIVISION);
-      const builderLabel = project.builder_name?.trim() || "Unassigned Builder";
-      const builderKey = `${subdivisionKey}::${
-        project.builder_id ??
-        (project.builder_name?.trim()
-          ? `builder:${builderLabel.toLowerCase()}`
-          : UNASSIGNED_BUILDER)
-      }`;
-      const streetLabel = getStreetFolderLabel(project.project_address);
-      const streetKey = `${builderKey}::${streetLabel.toLowerCase()}`;
+      const {
+        subdivisionLabel,
+        subdivisionKey,
+        builderLabel,
+        builderKey,
+        streetLabel,
+        streetKey,
+      } = getProjectGroupKeys(project);
 
       const subdivisionGroup = subdivisionMap.get(subdivisionKey) ?? {
         key: subdivisionKey,
@@ -583,7 +596,9 @@ export function ProjectsPageClient({
             const streets = Array.from(builderGroup.streets.values())
               .map((streetGroup) => {
                 const sortedProjects = [...streetGroup.projects].sort((a, b) =>
-                  a.project_address.localeCompare(b.project_address),
+                  getProjectStreetTitle(a).localeCompare(
+                    getProjectStreetTitle(b),
+                  ),
                 );
 
                 return {
@@ -644,6 +659,20 @@ export function ProjectsPageClient({
       })
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [filteredProjects]);
+
+  const allProjectIdsByStreet = useMemo(() => {
+    const idsByStreet = new Map<string, string[]>();
+
+    for (const project of projects) {
+      const { streetKey } = getProjectGroupKeys(project);
+      idsByStreet.set(streetKey, [
+        ...(idsByStreet.get(streetKey) ?? []),
+        project.id,
+      ]);
+    }
+
+    return idsByStreet;
+  }, [projects]);
 
   const effectiveExpandedSubdivisions = useMemo(() => {
     const subdivisionKeys = new Set(groupedProjects.map((group) => group.key));
@@ -720,7 +749,9 @@ export function ProjectsPageClient({
 
   function toggleSubdivision(subdivisionKey: string) {
     setExpandedSubdivisions((prev) => {
-      const defaultExpanded = groupedProjects[0] ? [groupedProjects[0].key] : [];
+      const defaultExpanded = groupedProjects[0]
+        ? [groupedProjects[0].key]
+        : [];
       const currentExpanded = prev ?? defaultExpanded;
 
       if (currentExpanded.includes(subdivisionKey)) {
@@ -765,7 +796,10 @@ export function ProjectsPageClient({
     return (
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-xl font-semibold">Projects (0)</h1>
+          <PageHeader
+            title="Projects"
+            description="Manage your active and completed construction projects."
+          />
           <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
             <ImportProjectJobsButton className="w-full sm:w-auto" />
             <NewProjectButton
@@ -775,38 +809,29 @@ export function ProjectsPageClient({
             />
           </div>
         </div>
-        <Card className="p-8">
-          <div className="flex justify-center">
-            <Image src="/project.png" alt="Project" width={192} height={192} />
-          </div>
-          <div className="text-xl text-bold text-muted-foreground text-center">
-            You currently don&apos;t <br />have any projects.
-          </div>
-          <div className="text-center text-md">To get started, create a<br /> project here. </div>
-          <div className="flex justify-center">
+        <EmptyState
+          title="No projects yet"
+          description="Create your first project to begin tracking jobs and invoices."
+          action={
             <NewProjectButton
               initialBuilders={builders}
               initialSubdivisions={subdivisions}
-              buttonClassName="w-full sm:w-auto  "
               buttonLabel="Create Project"
             />
-          </div>
-        </Card>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-primary">Projects</h1>
-            <p className="text-sm text-muted-foreground">
-              {filteredProjects.length} Project
-              {filteredProjects.length === 1 ? "" : "s"} shown
-            </p>
-          </div>
+          <PageHeader
+            title="Projects"
+            description="Manage your active and completed construction projects."
+          />
 
           <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
             <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
@@ -841,7 +866,10 @@ export function ProjectsPageClient({
                 </FilterDialogSection>
 
                 <FilterDialogSection title="Builder">
-                  <Select value={builderFilter} onValueChange={setBuilderFilter}>
+                  <Select
+                    value={builderFilter}
+                    onValueChange={setBuilderFilter}
+                  >
                     <SelectTrigger className="w-full justify-between">
                       <SelectValue placeholder="All Builders" />
                     </SelectTrigger>
@@ -867,7 +895,10 @@ export function ProjectsPageClient({
                     <SelectContent>
                       <SelectItem value="all">All Subdivisions</SelectItem>
                       {subdivisions.map((subdivision) => (
-                        <SelectItem key={subdivision.id} value={subdivision.name}>
+                        <SelectItem
+                          key={subdivision.id}
+                          value={subdivision.name}
+                        >
                           {subdivision.name}
                         </SelectItem>
                       ))}
@@ -878,7 +909,9 @@ export function ProjectsPageClient({
                 <FilterDialogSection title="Status">
                   <Select
                     value={statusFilter}
-                    onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+                    onValueChange={(value) =>
+                      setStatusFilter(value as StatusFilter)
+                    }
                   >
                     <SelectTrigger className="w-full justify-between">
                       <SelectValue placeholder="All Statuses" />
@@ -929,7 +962,7 @@ export function ProjectsPageClient({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {filteredProjects.length === 0 ? (
             <Card className="p-8">
               <div className="text-sm text-muted-foreground">
@@ -939,14 +972,13 @@ export function ProjectsPageClient({
           ) : view === "grouped" ? (
             <div className="space-y-3">
               {groupedProjects.map((subdivisionGroup) => {
-                const isSubdivisionExpanded = effectiveExpandedSubdivisions.includes(
-                  subdivisionGroup.key,
-                );
+                const isSubdivisionExpanded =
+                  effectiveExpandedSubdivisions.includes(subdivisionGroup.key);
 
                 return (
                   <Card
                     key={subdivisionGroup.key}
-                    className="overflow-hidden border-primary/20"
+                    className="overflow-hidden border-border"
                   >
                     <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                       <button
@@ -977,7 +1009,9 @@ export function ProjectsPageClient({
                       <SubdivisionGroupActionsMenu
                         builders={builders}
                         subdivisions={subdivisions}
-                        subdivisionId={subdivisionGroup.subdivision_id ?? undefined}
+                        subdivisionId={
+                          subdivisionGroup.subdivision_id ?? undefined
+                        }
                         subdivisionLabel={subdivisionGroup.label}
                         projectIds={subdivisionGroup.builders.flatMap(
                           (builderGroup) =>
@@ -993,38 +1027,49 @@ export function ProjectsPageClient({
                     {isSubdivisionExpanded && (
                       <div className="space-y-3 border-t p-3 sm:p-4">
                         {subdivisionGroup.builders.map((builderGroup) => {
-                          const isBuilderExpanded = effectiveExpandedBuilders.includes(
-                            builderGroup.key,
-                          );
+                          const isBuilderExpanded =
+                            effectiveExpandedBuilders.includes(
+                              builderGroup.key,
+                            );
 
                           return (
                             <div key={builderGroup.key} className="space-y-2">
-                              <button
-                                type="button"
-                                className="flex w-full flex-col items-start gap-2 rounded-md border bg-muted/30 p-3 text-left transition-colors hover:bg-muted/50 dark:bg-card/60 dark:hover:bg-card/90 cursor-pointer sm:flex-row sm:items-center sm:justify-between"
-                                onClick={() => toggleBuilder(builderGroup.key)}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <ChevronDown
-                                    className={cn(
-                                      "size-4 shrink-0 transition-transform cursor-pointer",
-                                      isBuilderExpanded && "rotate-180",
-                                    )}
-                                  />
-                                  <div className="font-medium">
-                                    {builderGroup.label}
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                                <button
+                                  type="button"
+                                  className="flex flex-1 flex-col items-start gap-2 rounded-md border bg-muted/30 p-3 text-left transition-colors hover:bg-muted/50 dark:bg-card/60 dark:hover:bg-card/90 cursor-pointer sm:flex-row sm:items-center sm:justify-between"
+                                  onClick={() => toggleBuilder(builderGroup.key)}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <ChevronDown
+                                      className={cn(
+                                        "size-4 shrink-0 transition-transform cursor-pointer",
+                                        isBuilderExpanded && "rotate-180",
+                                      )}
+                                    />
+                                    <div className="font-medium">
+                                      {builderGroup.label}
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="text-xs text-muted-foreground sm:text-right">
-                                  {builderGroup.projectCount}{" "}
-                                  {builderGroup.projectCount === 1
-                                    ? "project"
-                                    : "projects"}{" "}
-                                  • {builderGroup.totalJobCount} jobs •{" "}
-                                  {builderGroup.openJobCount} open
-                                </div>
-                              </button>
-
+                                  <div className="text-xs text-muted-foreground sm:text-right">
+                                    {builderGroup.projectCount}{" "}
+                                    {builderGroup.projectCount === 1
+                                      ? "project"
+                                      : "projects"}{" "}
+                                    • {builderGroup.totalJobCount} jobs •{" "}
+                                    {builderGroup.openJobCount} open
+                                  </div>
+                                </button>
+                                <BuilderGroupActionsMenu
+                                  builders={builders}
+                                  subdivisions={subdivisions}
+                                  builderId={builderGroup.builder_id ?? undefined}
+                                  subdivisionId={
+                                    subdivisionGroup.subdivision_id ?? undefined
+                                  }
+                                  builderLabel={builderGroup.label}
+                                />
+                              </div>
 
                               {/* User viewing after builder selection */}
                               {isBuilderExpanded && (
@@ -1036,18 +1081,24 @@ export function ProjectsPageClient({
                                       );
 
                                     return (
-                                      <div key={streetGroup.key} className="space-y-2">
+                                      <div
+                                        key={streetGroup.key}
+                                        className="space-y-2"
+                                      >
                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
                                           <button
                                             type="button"
                                             className="flex flex-1 flex-col items-start gap-2 rounded-md border bg-muted/20 p-3 text-left transition-colors hover:bg-muted/35 cursor-pointer sm:flex-row sm:items-center sm:justify-between"
-                                            onClick={() => toggleStreet(streetGroup.key)}
+                                            onClick={() =>
+                                              toggleStreet(streetGroup.key)
+                                            }
                                           >
                                             <div className="flex items-center gap-2">
                                               <ChevronDown
                                                 className={cn(
                                                   "size-4 shrink-0 transition-transform cursor-pointer",
-                                                  isStreetExpanded && "rotate-180",
+                                                  isStreetExpanded &&
+                                                    "rotate-180",
                                                 )}
                                               />
                                               <div className="font-medium">
@@ -1059,99 +1110,139 @@ export function ProjectsPageClient({
                                               {streetGroup.projects.length === 1
                                                 ? "project"
                                                 : "projects"}{" "}
-                                              • {streetGroup.totalJobCount} jobs •{" "}
-                                              {streetGroup.openJobCount} open
+                                              • {streetGroup.totalJobCount} jobs
+                                              • {streetGroup.openJobCount} open
                                             </div>
                                           </button>
                                           <StreetGroupActionsMenu
                                             builders={builders}
                                             subdivisions={subdivisions}
-                                            builderId={builderGroup.builder_id ?? undefined}
+                                            builderId={
+                                              builderGroup.builder_id ??
+                                              undefined
+                                            }
                                             subdivisionId={
-                                              subdivisionGroup.subdivision_id ?? undefined
+                                              subdivisionGroup.subdivision_id ??
+                                              undefined
                                             }
                                             streetAddress={streetGroup.label}
                                             streetLabel={streetGroup.label}
-                                            projectIds={streetGroup.projects.map(
-                                              (project) => project.id,
-                                            )}
+                                            projectIds={
+                                              allProjectIdsByStreet.get(
+                                                streetGroup.key,
+                                              ) ??
+                                              streetGroup.projects.map(
+                                                (project) => project.id,
+                                              )
+                                            }
                                           />
                                         </div>
-
 
                                         {/* Where user views projects via the street. */}
                                         {isStreetExpanded && (
                                           <div className="space-y-2 pl-2 sm:pl-4">
-                                            {streetGroup.projects.map((project) => {
-                                              const isSelected =
-                                                effectiveSelectedProjectId ===
-                                                project.id;
+                                            {streetGroup.projects.map(
+                                              (project) => {
+                                                const isSelected =
+                                                  effectiveSelectedProjectId ===
+                                                  project.id;
+                                                const locationSubtitle =
+                                                  getProjectLocationSubtitle(
+                                                    project,
+                                                  );
 
-                                              return (
-                                                <Card
-                                                  key={project.id}
-                                                  className={cn(
-                                                    "border-primary/10 p-3 transition-colors cursor-pointer",
-                                                    isSelected
-                                                      ? "bg-primary/[0.03] ring-2 ring-primary/20"
-                                                      : "hover:bg-primary/5",
-                                                  )}
-                                                  onClick={() => {
-                                                    setSelectedProjectId(project.id);
-                                                    if (isMobile) {
-                                                      router.push(`/projects/${project.id}`);
-                                                    }
-                                                  }}
-                                                >
-                                                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                                    <div className="min-w-0 space-y-1">
-                                                      <div className="break-words font-medium">
-                                                        {project.project_address}
+                                                return (
+                                                  <Card
+                                                    key={project.id}
+                                                    className={cn(
+                                                      "border-border p-3 transition-colors cursor-pointer",
+                                                      isSelected
+                                                        ? "bg-muted/50 ring-1 ring-border"
+                                                        : "hover:bg-muted/50",
+                                                    )}
+                                                    onClick={() => {
+                                                      setSelectedProjectId(
+                                                        project.id,
+                                                      );
+                                                      if (isMobile) {
+                                                        router.push(
+                                                          `/projects/${project.id}`,
+                                                        );
+                                                      }
+                                                    }}
+                                                  >
+                                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                      <div className="min-w-0 space-y-1">
+                                                        <div className="break-words font-medium">
+                                                          {getProjectStreetTitle(
+                                                            project,
+                                                          )}
+                                                        </div>
+                                                        {locationSubtitle ? (
+                                                          <div className="text-xs text-muted-foreground">
+                                                            {locationSubtitle}
+                                                          </div>
+                                                        ) : null}
+                                                        <div className="text-xs text-muted-foreground">
+                                                          {project.job_count}{" "}
+                                                          jobs •{" "}
+                                                          {
+                                                            project.open_job_count
+                                                          }{" "}
+                                                          open • Last activity{" "}
+                                                          {formatRelativeTime(
+                                                            project.last_activity_at,
+                                                          )}
+                                                        </div>
                                                       </div>
-                                                      <div className="text-xs text-muted-foreground">
-                                                        {project.job_count} jobs •{" "}
-                                                        {project.open_job_count} open
-                                                        • Last activity{" "}
-                                                        {formatRelativeTime(
-                                                          project.last_activity_at,
-                                                        )}
-                                                      </div>
-                                                    </div>
 
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                      <ProjectStatusBadges
-                                                        project={project}
-                                                      />
-                                                      <div
-                                                        onClick={(event) =>
-                                                          event.stopPropagation()
-                                                        }
-                                                      >
-                                                        <ProjectCardActionsDropdown
+                                                      <div className="flex flex-wrap items-center gap-2">
+                                                        <ProjectStatusBadges
                                                           project={project}
-                                                          builders={builders}
-                                                          subdivisions={subdivisions}
-                                                          onViewProject={setSelectedProjectId}
-                                                          onQuickComplete={(projectId) => {
-                                                            setSelectedProjectId(projectId);
-                                                            setQuickCompleteDrawerOpen(true);
-                                                          }}
                                                         />
-                                                      </div>
-                                                      <div
-                                                        onClick={(event) =>
-                                                          event.stopPropagation()
-                                                        }
-                                                      >
-                                                        <DeleteProjectButton
-                                                          projectId={project.id}
-                                                        />
+                                                        <div
+                                                          onClick={(event) =>
+                                                            event.stopPropagation()
+                                                          }
+                                                        >
+                                                          <ProjectCardActionsDropdown
+                                                            project={project}
+                                                            builders={builders}
+                                                            subdivisions={
+                                                              subdivisions
+                                                            }
+                                                            onViewProject={
+                                                              setSelectedProjectId
+                                                            }
+                                                            onQuickComplete={(
+                                                              projectId,
+                                                            ) => {
+                                                              setSelectedProjectId(
+                                                                projectId,
+                                                              );
+                                                              setQuickCompleteDrawerOpen(
+                                                                true,
+                                                              );
+                                                            }}
+                                                          />
+                                                        </div>
+                                                        <div
+                                                          onClick={(event) =>
+                                                            event.stopPropagation()
+                                                          }
+                                                        >
+                                                          <DeleteProjectButton
+                                                            projectId={
+                                                              project.id
+                                                            }
+                                                          />
+                                                        </div>
                                                       </div>
                                                     </div>
-                                                  </div>
-                                                </Card>
-                                              );
-                                            })}
+                                                  </Card>
+                                                );
+                                              },
+                                            )}
                                           </div>
                                         )}
                                       </div>
@@ -1169,58 +1260,105 @@ export function ProjectsPageClient({
               })}
             </div>
           ) : (
-            filteredProjects.map((project) => {
-              const isSelected = effectiveSelectedProjectId === project.id;
-
-              return (
-                <Card
-                  key={project.id}
-                  className={cn(
-                    "border-primary/10 p-3 transition-colors sm:p-5 cursor-pointer",
-                    isSelected
-                      ? "bg-primary/[0.03] ring-2 ring-primary/20"
-                      : "hover:bg-primary/5",
-                  )}
-                  onClick={() => {
-                    setSelectedProjectId(project.id);
-                    if (isMobile) {
-                      router.push(`/projects/${project.id}`);
-                    }
-                  }}
-                >
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div className="mt-0.5 rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">
-                          {project.job_count}{" "}
-                          {project.job_count === 1 ? " Job" : " Jobs"}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="break-words text-lg font-semibold leading-tight sm:text-xl">
-                              {project.project_address}
-                            </div>
-                            <ProjectStatusBadges project={project} />
+            <>
+              <div className="divide-y rounded-xl border bg-card lg:hidden">
+                {sortedListProjects.map((project) => (
+                  <article key={project.id} className="space-y-3 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <Link
+                        href={`/projects/${project.id}`}
+                        className="min-w-0 py-1 font-medium leading-relaxed break-words hover:text-primary"
+                        onClick={() => setSelectedProjectId(project.id)}
+                      >
+                        {getProjectStreetTitle(project)}
+                      </Link>
+                      <ProjectCardActionsDropdown
+                        project={project}
+                        builders={builders}
+                        subdivisions={subdivisions}
+                        onViewProject={setSelectedProjectId}
+                        onQuickComplete={(projectId) => {
+                          setSelectedProjectId(projectId);
+                          setQuickCompleteDrawerOpen(true);
+                        }}
+                      />
+                    </div>
+                    <p className="text-sm leading-relaxed text-muted-foreground break-words">
+                      {project.subdivision ?? "No subdivision"}
+                      {project.builder_name ?? "Unassigned builder"} ·{" "}
+                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <ProjectStatusBadges project={project} />
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {project.job_count - project.open_job_count} /{" "}
+                        {project.job_count} jobs complete
+                      </span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              <div className="hidden min-w-0 overflow-hidden rounded-xl border bg-card lg:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <ProjectSortHeader label="Project Address" sortKey="address" sort={sort} onSort={handleSort} />
+                      <ProjectSortHeader label="Subdivision / Builder" sortKey="group" sort={sort} onSort={handleSort} />
+                      <ProjectSortHeader label="Job Progress" sortKey="progress" sort={sort} onSort={handleSort} />
+                      <ProjectSortHeader label="Status" sortKey="status" sort={sort} onSort={handleSort} />
+                      <ProjectSortHeader label="Last Updated" sortKey="updated" sort={sort} onSort={handleSort} />
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedListProjects.map((project) => (
+                      <TableRow
+                        key={project.id}
+                        data-state={
+                          effectiveSelectedProjectId === project.id
+                            ? "selected"
+                            : undefined
+                        }
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setSelectedProjectId(project.id);
+                          if (isMobile) router.push(`/projects/${project.id}`);
+                        }}
+                      >
+                        <TableCell>
+                          <Link
+                            href={`/projects/${project.id}`}
+                            className="font-medium text-foreground hover:text-primary hover:underline"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {getProjectStreetTitle(project)}
+                          </Link>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {getProjectLocationSubtitle(project)}
                           </div>
-                          <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Hammer className="size-4" />
-                              Builder: {project.builder_name ?? "Unassigned"}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Home className="size-4" />
-                              Subdivision: {project.subdivision ?? "Unassigned"}
-                            </div>
-                            <div>
-                              Last activity:{" "}
-                              {formatRelativeTime(project.last_activity_at)}
-                            </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>{project.subdivision ?? "No subdivision"}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {project.builder_name ?? "Unassigned"}
                           </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div onClick={(event) => event.stopPropagation()}>
+                        </TableCell>
+                        <TableCell className="tabular-nums">
+                          {project.job_count - project.open_job_count} /{" "}
+                          {project.job_count}
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            complete
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <ProjectStatusBadges project={project} />
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {formatRelativeTime(project.last_activity_at)}
+                        </TableCell>
+                        <TableCell
+                          className="text-right"
+                          onClick={(event) => event.stopPropagation()}
+                        >
                           <ProjectCardActionsDropdown
                             project={project}
                             builders={builders}
@@ -1231,138 +1369,152 @@ export function ProjectsPageClient({
                               setQuickCompleteDrawerOpen(true);
                             }}
                           />
-                        </div>
-                        <div onClick={(event) => event.stopPropagation()}>
-                          <DeleteProjectButton projectId={project.id} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <Link
-                        href={`/projects/${project.id}`}
-                        className="inline-flex items-center gap-1 text-lg font-medium text-gray-500 hover:text-primary dark:text-white dark:hover:text-primary/90 transition delay-100"
-                        onClick={() => setSelectedProjectId(project.id)}
-                      >
-                        Open Project
-                        <ArrowRight className="size-5" />
-                      </Link>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </div>
 
-        <Card className="hidden h-fit border-primary/20 p-5 xl:sticky xl:top-4 xl:block">
-          {selectedProject ? (
-            <div className="space-y-5">
-              <div>
-                <div className="text-sm font-medium text-primary/80">
-                  Selected Project
+        <div className="hidden h-fit space-y-4 xl:sticky xl:top-4 xl:block">
+          <Card className="border-border p-5">
+            {selectedProject ? (
+              <div className="space-y-6">
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Selected Project
+                  </div>
+                  <div className="mt-2 text-xl font-semibold tracking-tight leading-snug">
+                    {getProjectStreetTitle(selectedProject)}
+                  </div>
+                  {getProjectLocationSubtitle(selectedProject) ? (
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      {getProjectLocationSubtitle(selectedProject)}
+                    </div>
+                  ) : null}
                 </div>
-                <div className="mt-2 text-3xl font-semibold leading-tight">
-                  {selectedProject.project_address}
-                </div>
-              </div>
 
-              <div className="rounded-md border border-primary/20 bg-primary/[0.03] p-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-2xl font-semibold leading-none">
-                      {selectedProject.job_count} {selectedProject.job_count === 1 ? "Job" : "Jobs"}
-                    </div>
-                    <div className="mt-1 text-sm text-muted-foreground">
-                      {selectedProject.open_job_count === 0 ? "All jobs completed" : `${selectedProject.open_job_count} open job${selectedProject.open_job_count === 1 ? "" : "s"}`}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">
-                      Last activity
-                    </div>
-                    <div className="mt-1 text-xl font-semibold leading-tight">
-                      {formatRelativeTime(selectedProject.last_activity_at)} {formatRelativeTime(selectedProject.created_at) === "No activity yet" && "(Created " + formatRelativeTime(selectedProject.created_at) + ")"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 border-t pt-4">
-                <div className="text-sm font-medium text-muted-foreground">
-                  Jobs
-                </div>
-                {isLoadingJobs ? (
-                  <div className="animate-pulse rounded-md border border-dashed border-primary/20 p-4">
-                    <p className="text-sm text-muted-foreground">Loading jobs...</p>
-                  </div>
-                ) : (
-                  <div className="hidden xl:block">
-                    <QuickJobComplete jobs={selectedProjectJobs} />
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3 border-t pt-4">
-                <div className="text-sm font-medium text-muted-foreground">
-                  Superintendents / GC:
-                </div>
-                {selectedProject.crew_names.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">
-                    No Superintendents / GCs assigned.
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {selectedProject.crew_names.slice(0, 5).map((crewName) => (
-                      <div key={crewName} className="flex items-center gap-3">
-                        <Avatar size="sm">
-                          <AvatarFallback>
-                            {toInitials(crewName)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-base font-medium">
-                          {crewName}
-                        </span>
+                <div className="rounded-md border border-border bg-muted/30 p-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-2xl font-semibold leading-none">
+                        {selectedProject.job_count}{" "}
+                        {selectedProject.job_count === 1 ? "Job" : "Jobs"}
                       </div>
-                    ))}
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        {selectedProject.open_job_count === 0
+                          ? "All jobs completed"
+                          : `${selectedProject.open_job_count} open job${selectedProject.open_job_count === 1 ? "" : "s"}`}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">
+                        Last activity
+                      </div>
+                      <div className="mt-1 text-xl font-semibold leading-tight">
+                        {formatRelativeTime(selectedProject.last_activity_at)}{" "}
+                        {formatRelativeTime(selectedProject.created_at) ===
+                          "No activity yet" &&
+                          "(Created " +
+                            formatRelativeTime(selectedProject.created_at) +
+                            ")"}
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+                </div>
 
-              <div className="space-y-2 border-t pt-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Building2 className="size-4" />
-                  Builder: {selectedProject.builder_name ?? "Unassigned"}
+                <div className="space-y-3 border-t pt-4">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Jobs
+                  </div>
+                  {isLoadingJobs ? (
+                    <div className="animate-pulse rounded-md border border-dashed border-border p-4">
+                      <p className="text-sm text-muted-foreground">
+                        Loading jobs...
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="hidden xl:block">
+                      <QuickJobComplete jobs={selectedProjectJobs} />
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Home className="size-4" />
-                  Subdivision: {selectedProject.subdivision ?? "Unassigned"}
-                </div>
-                <div className="flex items-center gap-2">
-                  <UserRound className="size-4" />
-                  Status:
-                  <span className="flex flex-wrap items-center gap-2">
-                    <ProjectStatusBadges project={selectedProject} />
-                  </span>
-                </div>
-              </div>
 
-              <div className="border-t pt-4">
-                <Link
-                  href={`/projects/${selectedProject.id}`}
-                  className="inline-flex items-center gap-1 text-muted-foreground text-lg font-medium text-gray-500 hover:text-primary dark:text-white dark:hover:text-primary/90 transition delay-100"
-                >
-                  View Project
-                  <ArrowRight className="size-4" />
-                </Link>
+                <div className="space-y-3 border-t pt-4">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Superintendents / GC:
+                  </div>
+                  {selectedProject.crew_names.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">
+                      No Superintendents / GCs assigned.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedProject.crew_names
+                        .slice(0, 5)
+                        .map((crewName) => (
+                          <div
+                            key={crewName}
+                            className="flex items-center gap-3"
+                          >
+                            <Avatar size="sm">
+                              <AvatarFallback>
+                                {toInitials(crewName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-base font-medium">
+                              {crewName}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 border-t pt-4 text-sm text-muted-foreground">
+                  {getProjectLocationSubtitle(selectedProject) ? (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="size-4" />
+                      Location: {getProjectLocationSubtitle(selectedProject)}
+                    </div>
+                  ) : null}
+                  <div className="flex items-center gap-2">
+                    <Building2 className="size-4" />
+                    Builder: {selectedProject.builder_name ?? "Unassigned"}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Home className="size-4" />
+                    Subdivision: {selectedProject.subdivision ?? "Unassigned"}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <UserRound className="size-4" />
+                    Status:
+                    <span className="flex flex-wrap items-center gap-2">
+                      <ProjectStatusBadges project={selectedProject} />
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <Link
+                    href={`/projects/${selectedProject.id}`}
+                    className="inline-flex items-center gap-1 text-muted-foreground text-lg font-medium text-gray-500 hover:text-primary dark:text-white dark:hover:text-primary/90 transition delay-100"
+                  >
+                    View Project
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">
-              Select a project to view details.
-            </div>
-          )}
-        </Card>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                Select a project to view details.
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
 
       {/* Quick Complete Drawer for mobile/card actions */}

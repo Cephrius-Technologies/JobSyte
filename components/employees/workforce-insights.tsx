@@ -26,7 +26,7 @@ import type {
 } from "./dashboard-data";
 
 function money(cents: number) {
-  return (cents / 100).toLocaleString(undefined, {
+  return (cents / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -34,7 +34,7 @@ function money(cents: number) {
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
+  return new Date(value).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });

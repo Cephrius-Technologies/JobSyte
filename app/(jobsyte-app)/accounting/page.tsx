@@ -1,6 +1,7 @@
 // Onboarding: accounting overview server page. Project-level accounting reuses
 // the same data types and client components under `components/accounting/*`.
 import { redirect } from "next/navigation";
+import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCompanyId } from "@/lib/active-company";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
@@ -17,10 +18,29 @@ import type {
  * Compute profitability numbers for a single project given pre-fetched
  * job and expense rows.
  */
+function isMissingProjectLocationColumnError(message: string | undefined) {
+  const normalized = (message ?? "").toLowerCase();
+  return (
+    normalized.includes("project_city") ||
+    normalized.includes("project_state") ||
+    (normalized.includes("schema cache") && normalized.includes("projects"))
+  );
+}
+
+function withLegacyProjectLocation<T extends Record<string, unknown>>(project: T) {
+  return {
+    ...project,
+    project_city: "project_city" in project ? project.project_city : null,
+    project_state: "project_state" in project ? project.project_state : null,
+  } as T & { project_city: string | null; project_state: string | null };
+}
+
 function buildOverviewRow(
   project: {
     id: string;
     project_address: string;
+    project_city: string | null;
+    project_state: string | null;
     builder_name: string | null;
     subdivision: string | null;
   },
@@ -67,6 +87,8 @@ function buildOverviewRow(
   return {
     project_id: project.id,
     project_address: project.project_address,
+    project_city: project.project_city,
+    project_state: project.project_state,
     builder_name: project.builder_name,
     subdivision: project.subdivision,
     status,
@@ -97,18 +119,34 @@ export default async function AccountingOverviewPage() {
   if (!companyId)         redirect("/login");
 
   // Fetch all non-deleted projects for the company
-  const { data: projects, error: projectsErr } = await supabase
+  const projectsRes = await supabase
     .from("projects")
-    .select("id, project_address, builder_name, subdivision")
+    .select("id, project_address, project_city, project_state, builder_name, subdivision")
     .eq("company_id", companyId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (projectsErr) {
-    return <p className="text-sm text-destructive">{projectsErr.message}</p>;
-  }
+  let allProjects = (projectsRes.data ?? []).map(withLegacyProjectLocation);
 
-  const allProjects = projects ?? [];
+  if (
+    projectsRes.error &&
+    isMissingProjectLocationColumnError(projectsRes.error.message)
+  ) {
+    const legacyProjectsRes = await supabase
+      .from("projects")
+      .select("id, project_address, builder_name, subdivision")
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+
+    if (legacyProjectsRes.error) {
+      return <p className="text-sm text-destructive">{legacyProjectsRes.error.message}</p>;
+    }
+
+    allProjects = (legacyProjectsRes.data ?? []).map(withLegacyProjectLocation);
+  } else if (projectsRes.error) {
+    return <p className="text-sm text-destructive">{projectsRes.error.message}</p>;
+  }
   if (allProjects.length === 0) {
     return (
       <div className="space-y-6">
@@ -199,7 +237,13 @@ export default async function AccountingOverviewPage() {
         </p>
       </div>
 
-      <AccountingOverviewClient rows={rows} jobs={jobs} expenses={expenses} invoices={invoices} />
+      <AccountingOverviewClient
+        rows={rows}
+        jobs={jobs}
+        expenses={expenses}
+        invoices={invoices}
+        todayKey={format(new Date(), "yyyy-MM-dd")}
+      />
     </div>
   );
 }

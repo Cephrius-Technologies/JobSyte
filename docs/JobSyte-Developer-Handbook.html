@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>JobSyte Developer Handbook</title>
+    <style>
+      body {
+        font-family: Helvetica, Arial, sans-serif;
+        color: #111827;
+        line-height: 1.45;
+        margin: 36px;
+      }
+      h1,
+      h2,
+      h3 {
+        color: #0f172a;
+        margin-bottom: 0.35em;
+      }
+      h1 {
+        font-size: 28px;
+        border-bottom: 2px solid #cbd5e1;
+        padding-bottom: 8px;
+      }
+      h2 {
+        font-size: 20px;
+        margin-top: 28px;
+      }
+      h3 {
+        font-size: 16px;
+        margin-top: 20px;
+      }
+      p,
+      li,
+      td,
+      th {
+        font-size: 11.5pt;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 20px;
+      }
+      th,
+      td {
+        border: 1px solid #cbd5e1;
+        padding: 8px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #e2e8f0;
+      }
+      code {
+        font-family: Menlo, Consolas, monospace;
+        font-size: 10.5pt;
+        background: #f8fafc;
+        padding: 1px 4px;
+      }
+      .muted {
+        color: #475569;
+      }
+      .callout {
+        border-left: 4px solid #2563eb;
+        background: #eff6ff;
+        padding: 10px 14px;
+        margin: 14px 0;
+      }
+      .small {
+        font-size: 10.5pt;
+      }
+      ul,
+      ol {
+        margin-top: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- This HTML file is the editable source of truth for the generated DOCX. -->
+    <!-- The content is based on the current workspace tree as of 2026-06-02. -->
+    <h1>JobSyte Developer Handbook</h1>
+    <p class="muted">
+      Last updated: 2026-06-02<br />
+      Source workspace: <code>JobSyte</code><br />
+      Generated artifact target: <code>docs/JobSyte-Developer-Handbook.docx</code>
+    </p>
+
+    <div class="callout">
+      <strong>Purpose.</strong> This document is the developer guide for the current
+      JobSyte web application. It explains the product scope, the runtime
+      architecture, the route and module map, the data boundaries, and the exact
+      files a developer should change when adding features, refactoring, or
+      fixing defects.
+    </div>
+
+    <h2>1. Product Scope</h2>
+    <p>
+      JobSyte is a contractor operations platform built on Next.js App Router and
+      Supabase. The product covers multi-company project management, job
+      scheduling, invoice generation, accounting expense tracking, employee and
+      crew management, payroll/payment tracking, reporting, global search,
+      settings/preferences, and release-note visibility.
+    </p>
+    <p>
+      The current workspace does <strong>not</strong> contain the older
+      <code>employee-app/</code> tree referenced by some historical docs. This
+      handbook reflects the files that exist in the current repository only.
+    </p>
+
+    <h2>2. Tech Stack And Runtime</h2>
+    <table>
+      <tr>
+        <th>Area</th>
+        <th>Current implementation</th>
+      </tr>
+      <tr>
+        <td>Framework</td>
+        <td><code>next@16.1.6</code> with App Router</td>
+      </tr>
+      <tr>
+        <td>UI</td>
+        <td>React 19, Tailwind CSS 4, shadcn/ui, Radix UI, lucide-react</td>
+      </tr>
+      <tr>
+        <td>Data and auth</td>
+        <td>Supabase SSR client, Supabase Auth, PostgreSQL tables via Supabase</td>
+      </tr>
+      <tr>
+        <td>Testing</td>
+        <td>Vitest, Testing Library, jsdom</td>
+      </tr>
+      <tr>
+        <td>Email</td>
+        <td>Resend API through <code>lib/notifications/send-email.ts</code></td>
+      </tr>
+      <tr>
+        <td>Charts and calendars</td>
+        <td>Recharts, react-day-picker</td>
+      </tr>
+    </table>
+
+    <h3>Scripts</h3>
+    <table>
+      <tr>
+        <th>Command</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td><code>npm run dev</code></td>
+        <td>Runs the Next.js dev server</td>
+      </tr>
+      <tr>
+        <td><code>npm run build</code></td>
+        <td>Production build verification</td>
+      </tr>
+      <tr>
+        <td><code>npm run start</code></td>
+        <td>Runs the built application</td>
+      </tr>
+      <tr>
+        <td><code>npm run lint</code></td>
+        <td>Project lint verification</td>
+      </tr>
+      <tr>
+        <td><code>npm run test</code></td>
+        <td>Interactive Vitest mode</td>
+      </tr>
+      <tr>
+        <td><code>npm run test:run</code></td>
+        <td>Non-interactive test run</td>
+      </tr>
+      <tr>
+        <td><code>npm run test:coverage</code></td>
+        <td>Coverage report generation</td>
+      </tr>
+      <tr>
+        <td><code>npm run import:projects-jobs</code></td>
+        <td>Runs <code>scripts/import-project-jobs.mjs</code></td>
+      </tr>
+    </table>
+
+    <h2>3. Required Environment Variables</h2>
+    <table>
+      <tr>
+        <th>Variable</th>
+        <th>Used by</th>
+        <th>Why it matters</th>
+      </tr>
+      <tr>
+        <td><code>NEXT_PUBLIC_SUPABASE_URL</code></td>
+        <td><code>lib/supabase/server.ts</code>, <code>lib/supabase/admin.ts</code>, <code>proxy.ts</code></td>
+        <td>Base Supabase project URL</td>
+      </tr>
+      <tr>
+        <td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td>
+        <td><code>lib/supabase/server.ts</code>, <code>proxy.ts</code>, <code>app/auth/callback/route.ts</code></td>
+        <td>Authenticated SSR/session client</td>
+      </tr>
+      <tr>
+        <td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+        <td><code>lib/supabase/admin.ts</code></td>
+        <td>Trusted admin client for cron and company lifecycle operations</td>
+      </tr>
+      <tr>
+        <td><code>CRON_SECRET</code></td>
+        <td><code>app/api/cron/preferences/route.ts</code></td>
+        <td>Authorizes the scheduled preference/email job</td>
+      </tr>
+      <tr>
+        <td><code>RESEND_API_KEY</code></td>
+        <td><code>lib/notifications/send-email.ts</code></td>
+        <td>Enables outbound email delivery</td>
+      </tr>
+      <tr>
+        <td><code>RESEND_FROM_EMAIL</code></td>
+        <td><code>lib/notifications/send-email.ts</code></td>
+        <td>Default sender identity</td>
+      </tr>
+      <tr>
+        <td><code>NEXT_PUBLIC_APP_URL</code> or <code>NEXT_PUBLIC_SITE_URL</code></td>
+        <td><code>app/api/cron/preferences/route.ts</code></td>
+        <td>Links inside scheduled emails</td>
+      </tr>
+    </table>
+
+    <h2>4. Top-Level Repository Map</h2>
+    <table>
+      <tr>
+        <th>Path</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td><code>app/</code></td>
+        <td>Next.js routes, layouts, page entry points, API routes, server actions</td>
+      </tr>
+      <tr>
+        <td><code>components/</code></td>
+        <td>Feature UI, shell UI, dialogs, tables, form controls, shared primitives</td>
+      </tr>
+      <tr>
+        <td><code>lib/</code></td>
+        <td>Supabase clients, tenant helpers, settings helpers, notifications, utilities</td>
+      </tr>
+      <tr>
+        <td><code>hooks/</code></td>
+        <td>Small shared hooks such as <code>use-mobile</code></td>
+      </tr>
+      <tr>
+        <td><code>public/</code></td>
+        <td>Images, logos, builder assets</td>
+      </tr>
+      <tr>
+        <td><code>scripts/</code></td>
+        <td>Project import automation and SQL helpers</td>
+      </tr>
+      <tr>
+        <td><code>supabase/</code></td>
+        <td>Schema migration SQL files tracked in-repo</td>
+      </tr>
+      <tr>
+        <td><code>tests/</code></td>
+        <td>Vitest unit and component coverage</td>
+      </tr>
+      <tr>
+        <td><code>docs/</code></td>
+        <td>Developer-facing docs, codemaps, and this handbook</td>
+      </tr>
+    </table>
+
+    <h2>5. Runtime Architecture</h2>
+    <h3>5.1 Root shell</h3>
+    <p>
+      <code>app/layout.tsx</code> is the global shell. It loads fonts, global
+      CSS, theme support, toaster support, and document title synchronization.
+      It is the first file to read when understanding how the app boots.
+    </p>
+
+    <h3>5.2 Authenticated shell</h3>
+    <p>
+      <code>app/(jobsyte-app)/layout.tsx</code> is the authenticated product
+      gate. It verifies the Supabase session, loads the companies the user
+      belongs to, and mounts <code>CompanyProvider</code> so the rest of the app
+      can read the active company.
+    </p>
+
+    <h3>5.3 Tenant scoping</h3>
+    <p>
+      Multi-company scoping is enforced through two files:
+    </p>
+    <ul>
+      <li><code>lib/company-context.ts</code> stores the selected company in local storage and the <code>jobsyte:active-company-id</code> cookie.</li>
+      <li><code>lib/active-company.ts</code> reads that cookie inside server components and server actions.</li>
+    </ul>
+    <p>
+      Any new data query or mutation that touches business data should use
+      <code>getActiveCompanyId()</code> instead of trusting company IDs passed
+      from the browser.
+    </p>
+
+    <h3>5.4 Supabase clients</h3>
+    <ul>
+      <li><code>lib/supabase/server.ts</code>: normal authenticated SSR and server-action access</li>
+      <li><code>lib/supabase/client.ts</code>: browser-side client access when needed</li>
+      <li><code>lib/supabase/admin.ts</code>: service-role access for cron and privileged cleanup</li>
+      <li><code>proxy.ts</code>: session refresh middleware</li>
+    </ul>
+
+    <h3>5.5 Page composition pattern</h3>
+    <p>
+      Most features follow the same shape:
+    </p>
+    <ol>
+      <li>A server page in <code>app/(jobsyte-app)/...</code> loads company-scoped data.</li>
+      <li>The page passes typed rows into a client component under <code>components/&lt;feature&gt;/</code>.</li>
+      <li>Dialogs, menus, and tables in that client component call server actions in the same route group.</li>
+      <li>The server action writes to Supabase, revalidates affected paths, and returns a small result object.</li>
+    </ol>
+
+    <h2>6. Full Route Inventory</h2>
+    <!-- This section intentionally maps every current page and route entry point. -->
+    <table>
+      <tr>
+        <th>Route</th>
+        <th>Entry file</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td><code>/</code></td>
+        <td><code>app/page.tsx</code></td>
+        <td>Root landing/redirect entry</td>
+      </tr>
+      <tr>
+        <td><code>/login</code></td>
+        <td><code>app/(auth)/login/page.tsx</code></td>
+        <td>Supabase-based contractor login</td>
+      </tr>
+      <tr>
+        <td><code>/signup</code></td>
+        <td><code>app/(auth)/signup/page.tsx</code></td>
+        <td>Contractor signup</td>
+      </tr>
+      <tr>
+        <td><code>/verify</code></td>
+        <td><code>app/(auth)/verify/page.tsx</code></td>
+        <td>Verification guidance flow</td>
+      </tr>
+      <tr>
+        <td><code>/auth/callback</code></td>
+        <td><code>app/auth/callback/route.ts</code></td>
+        <td>Email verification/session exchange and contractor profile bootstrap</td>
+      </tr>
+      <tr>
+        <td><code>/dashboard</code></td>
+        <td><code>app/(jobsyte-app)/dashboard/page.tsx</code></td>
+        <td>Main KPI view, weekly pipeline, current-month job calendar widget</td>
+      </tr>
+      <tr>
+        <td><code>/projects</code></td>
+        <td><code>app/(jobsyte-app)/projects/page.tsx</code></td>
+        <td>Project workbench with grouped views and project creation</td>
+      </tr>
+      <tr>
+        <td><code>/projects/[id]</code></td>
+        <td><code>app/(jobsyte-app)/projects/[id]/page.tsx</code></td>
+        <td>Single project details and jobs</td>
+      </tr>
+      <tr>
+        <td><code>/projects/[id]/accounting</code></td>
+        <td><code>app/(jobsyte-app)/projects/[id]/accounting/page.tsx</code></td>
+        <td>Project-specific accounting view</td>
+      </tr>
+      <tr>
+        <td><code>/calendar</code></td>
+        <td><code>app/(jobsyte-app)/calendar/page.tsx</code></td>
+        <td>Month-based jobs calendar and printable job list workflow</td>
+      </tr>
+      <tr>
+        <td><code>/invoices</code></td>
+        <td><code>app/(jobsyte-app)/invoices/page.tsx</code></td>
+        <td>Invoice list, filters, grouped views, and edit entry points</td>
+      </tr>
+      <tr>
+        <td><code>/invoices/new</code></td>
+        <td><code>app/(jobsyte-app)/invoices/new/page.tsx</code></td>
+        <td>Invoice creation route</td>
+      </tr>
+      <tr>
+        <td><code>/invoices/[id]</code></td>
+        <td><code>app/(jobsyte-app)/invoices/[id]/page.tsx</code></td>
+        <td>Single invoice detail/print view</td>
+      </tr>
+      <tr>
+        <td><code>/employees</code></td>
+        <td><code>app/(jobsyte-app)/employees/page.tsx</code></td>
+        <td>Employee records page</td>
+      </tr>
+      <tr>
+        <td><code>/employees-crews</code></td>
+        <td><code>app/(jobsyte-app)/employees-crews/page.tsx</code></td>
+        <td>Combined workforce overview</td>
+      </tr>
+      <tr>
+        <td><code>/employees-crews/crews</code></td>
+        <td><code>app/(jobsyte-app)/employees-crews/crews/page.tsx</code></td>
+        <td>Crew management view</td>
+      </tr>
+      <tr>
+        <td><code>/employees-crews/roster</code></td>
+        <td><code>app/(jobsyte-app)/employees-crews/roster/page.tsx</code></td>
+        <td>Roster scheduling view</td>
+      </tr>
+      <tr>
+        <td><code>/accounting</code></td>
+        <td><code>app/(jobsyte-app)/accounting/page.tsx</code></td>
+        <td>Accounting overview and project expenses</td>
+      </tr>
+      <tr>
+        <td><code>/accounting/[id]</code></td>
+        <td><code>app/(jobsyte-app)/accounting/[id]/page.tsx</code></td>
+        <td>Project accounting detail page</td>
+      </tr>
+      <tr>
+        <td><code>/payroll</code></td>
+        <td><code>app/(jobsyte-app)/payroll/page.tsx</code></td>
+        <td>Payment recording and payroll-linked expense flow</td>
+      </tr>
+      <tr>
+        <td><code>/search</code></td>
+        <td><code>app/(jobsyte-app)/search/page.tsx</code></td>
+        <td>Full-page cross-module search</td>
+      </tr>
+      <tr>
+        <td><code>/settings</code></td>
+        <td><code>app/(jobsyte-app)/settings/page.tsx</code></td>
+        <td>Preferences, company settings, security, release notes, presets</td>
+      </tr>
+    </table>
+
+    <h3>API and utility routes</h3>
+    <table>
+      <tr>
+        <th>Route</th>
+        <th>Entry file</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td><code>/api/search/suggest</code></td>
+        <td><code>app/api/search/suggest/route.ts</code></td>
+        <td>Header search suggestions across projects, jobs, invoices, accounting, employees, crews, payments, expenses</td>
+      </tr>
+      <tr>
+        <td><code>/api/settings/export</code></td>
+        <td><code>app/api/settings/export/route.ts</code></td>
+        <td>Company-scoped data export as JSON</td>
+      </tr>
+      <tr>
+        <td><code>/api/cron/preferences</code></td>
+        <td><code>app/api/cron/preferences/route.ts</code></td>
+        <td>Scheduled invoice reminder, weekly summary, and product update emails</td>
+      </tr>
+      <tr>
+        <td><code>/api/auth/verified</code></td>
+        <td><code>app/api/auth/verified/route.ts</code></td>
+        <td>Short-lived cookie write used by verification UX</td>
+      </tr>
+    </table>
+
+    <h2>7. Module Ownership Map</h2>
+    <table>
+      <tr>
+        <th>Feature area</th>
+        <th>Primary files to read first</th>
+        <th>Where to make changes</th>
+      </tr>
+      <tr>
+        <td>App shell and navigation</td>
+        <td><code>app/(jobsyte-app)/layout.tsx</code>, <code>components/app-shell/app-shell.tsx</code>, <code>components/app-shell/sidebar-nav.tsx</code>, <code>components/app-shell/header.tsx</code></td>
+        <td>Navigation, company switcher, breadcrumbs, version dialog, global search trigger, responsive shell layout</td>
+      </tr>
+      <tr>
+        <td>Dashboard</td>
+        <td><code>app/(jobsyte-app)/dashboard/page.tsx</code>, <code>components/dashboard/month-jobs-calendar.tsx</code>, <code>components/dashboard/toggle-job-complete-button.tsx</code></td>
+        <td>KPI queries, dashboard cards, current-month calendar behavior, job completion toggle</td>
+      </tr>
+      <tr>
+        <td>Projects</td>
+        <td><code>app/(jobsyte-app)/projects/page.tsx</code>, <code>components/projects/projects-page.tsx</code>, <code>components/projects/types.ts</code>, <code>app/(jobsyte-app)/projects/actions.ts</code></td>
+        <td>Project list/grouping, new-project defaults, presets, bulk delete, imports, builder/subdivision linkage</td>
+      </tr>
+      <tr>
+        <td>Project detail and jobs</td>
+        <td><code>app/(jobsyte-app)/projects/[id]/page.tsx</code>, <code>app/(jobsyte-app)/projects/[id]/actions.ts</code>, <code>components/jobs/*</code>, <code>components/projects/quick-job-*.tsx</code></td>
+        <td>Job CRUD, scheduling, completion, quick actions, billing flags inside project workflows</td>
+      </tr>
+      <tr>
+        <td>Calendar</td>
+        <td><code>app/(jobsyte-app)/calendar/page.tsx</code>, <code>components/calendar/jobs-calendar-page.tsx</code>, <code>components/ui/calendar.tsx</code></td>
+        <td>Month navigation, job counts per day, mobile behavior, job list/report creation and print flow</td>
+      </tr>
+      <tr>
+        <td>Invoices</td>
+        <td><code>app/(jobsyte-app)/invoices/page.tsx</code>, <code>app/(jobsyte-app)/invoices/actions.ts</code>, <code>app/(jobsyte-app)/invoices/payment-actions.ts</code>, <code>components/invoices/*</code></td>
+        <td>Invoice creation, builder aggregation, edit/delete, payment state, printable invoice views</td>
+      </tr>
+      <tr>
+        <td>Employees and crews</td>
+        <td><code>app/(jobsyte-app)/employees/page.tsx</code>, <code>app/(jobsyte-app)/employees-crews/actions.ts</code>, <code>components/employees/*</code></td>
+        <td>Employee/crew CRUD, workforce insights, rostering, employee payment dialogs</td>
+      </tr>
+      <tr>
+        <td>Accounting</td>
+        <td><code>app/(jobsyte-app)/accounting/page.tsx</code>, <code>app/(jobsyte-app)/accounting/actions.ts</code>, <code>components/accounting/*</code></td>
+        <td>Expenses, project profitability, accounting tables, payroll-synced expense restrictions</td>
+      </tr>
+      <tr>
+        <td>Payroll</td>
+        <td><code>app/(jobsyte-app)/payroll/page.tsx</code>, <code>app/(jobsyte-app)/payroll/actions.ts</code>, <code>components/payroll/payroll-page.tsx</code></td>
+        <td>Payment records, refunds, links between payroll and expenses</td>
+      </tr>
+      <tr>
+        <td>Search</td>
+        <td><code>app/(jobsyte-app)/search/page.tsx</code>, <code>app/api/search/suggest/route.ts</code>, <code>components/search/recent-searches.tsx</code>, <code>components/app-shell/header.tsx</code></td>
+        <td>Full search results, command-style search suggestions, cross-module matching, recent searches</td>
+      </tr>
+      <tr>
+        <td>Settings</td>
+        <td><code>app/(jobsyte-app)/settings/page.tsx</code>, <code>app/(jobsyte-app)/settings/actions.ts</code>, <code>app/(jobsyte-app)/settings/company-actions.ts</code>, <code>components/settings/*</code>, <code>lib/settings/preferences.ts</code></td>
+        <td>Profile settings, appearance, preferences, data export, release notes, company create/delete, project presets</td>
+      </tr>
+      <tr>
+        <td>Notifications</td>
+        <td><code>app/api/cron/preferences/route.ts</code>, <code>lib/notifications/send-email.ts</code>, <code>lib/notifications/templates.ts</code></td>
+        <td>Email templates, scheduling logic, resend integration, user metadata updates</td>
+      </tr>
+      <tr>
+        <td>Shared UI primitives</td>
+        <td><code>components/ui/*</code>, especially <code>button.tsx</code>, <code>dialog.tsx</code>, <code>filter-dialog.tsx</code>, <code>calendar.tsx</code>, <code>table.tsx</code></td>
+        <td>Reusable design-system level pieces and interaction primitives</td>
+      </tr>
+    </table>
+
+    <h2>8. Data Model Surface Visible In Code</h2>
+    <p>
+      The following tables are directly referenced by the current application
+      code and therefore define the practical scope of the product:
+    </p>
+    <ul>
+      <li><code>companies</code></li>
+      <li><code>company_members</code></li>
+      <li><code>contractor_profiles</code></li>
+      <li><code>projects</code></li>
+      <li><code>jobs</code></li>
+      <li><code>builders</code></li>
+      <li><code>subdivisions</code></li>
+      <li><code>project_presets</code></li>
+      <li><code>project_preset_jobs</code></li>
+      <li><code>invoices</code></li>
+      <li><code>invoice_items</code></li>
+      <li><code>employees</code></li>
+      <li><code>crews</code></li>
+      <li><code>payments</code></li>
+      <li><code>project_expenses</code></li>
+    </ul>
+    <p>
+      Several flows also depend on soft-delete columns such as
+      <code>deleted_at</code>, and financial amounts are commonly stored as
+      integer cents in fields such as <code>price_cents</code>,
+      <code>subtotal_cents</code>, and <code>amount_cents</code>.
+    </p>
+
+    <h3>Migrations and SQL assets</h3>
+    <ul>
+      <li><code>supabase/migration_employee_login.sql</code></li>
+      <li><code>supabase/migration_employee_profile.sql</code></li>
+      <li><code>supabase/migration_project_presets.sql</code></li>
+      <li><code>scripts/add-payment-tracking.sql</code></li>
+    </ul>
+    <p>
+      When changing schema-sensitive behavior, read the relevant SQL file before
+      changing the application code. The app code frequently encodes assumptions
+      about nullable columns, soft deletes, and enum-like string values.
+    </p>
+
+    <h2>9. How To Add Features</h2>
+    <!-- This section is the practical change workflow developers should follow. -->
+    <ol>
+      <li>Choose the route group first. Identify whether the feature belongs under <code>projects</code>, <code>invoices</code>, <code>calendar</code>, <code>accounting</code>, <code>settings</code>, or another existing vertical.</li>
+      <li>Add or extend the server page query. Page-level data loading lives in the route file under <code>app/(jobsyte-app)/...</code>.</li>
+      <li>Keep interactivity in a client component. The interactive workbench almost always belongs under <code>components/&lt;feature&gt;/</code>.</li>
+      <li>Add mutations in server actions. Create or extend the nearest <code>actions.ts</code> file inside the route group instead of posting directly from the client to Supabase.</li>
+      <li>Use company scoping. New reads or writes that touch business data should call <code>getActiveCompanyId()</code>.</li>
+      <li>Update shared types near the feature. Examples include <code>components/projects/types.ts</code> and <code>components/accounting/types.ts</code>.</li>
+      <li>Revalidate affected routes after mutations using <code>revalidatePath()</code>.</li>
+      <li>Update surrounding UX when necessary. This may include sidebar navigation, document title sync, search indexing, breadcrumbs, filter dialogs, release notes, and empty states.</li>
+      <li>Add or extend tests when the change affects parsing, derived data, or shared utilities.</li>
+      <li>Run at least <code>npm run lint</code>. For logic-heavy changes, also run <code>npm run test:run</code> and <code>npm run build</code>.</li>
+    </ol>
+
+    <h3>Feature-specific entry points</h3>
+    <table>
+      <tr>
+        <th>If you want to change...</th>
+        <th>Start here</th>
+      </tr>
+      <tr>
+        <td>A new top-level page</td>
+        <td><code>app/(jobsyte-app)/&lt;new-page&gt;/page.tsx</code>, then <code>components/app-shell/sidebar-nav.tsx</code></td>
+      </tr>
+      <tr>
+        <td>Project creation or grouping behavior</td>
+        <td><code>components/projects/projects-page.tsx</code>, <code>components/projects/new-project-dialog.tsx</code>, <code>app/(jobsyte-app)/projects/actions.ts</code></td>
+      </tr>
+      <tr>
+        <td>Job table behavior</td>
+        <td><code>components/jobs/jobs-table.tsx</code>, <code>components/jobs/add-job-dialog.tsx</code>, <code>components/jobs/edit-job-dialog.tsx</code>, <code>app/(jobsyte-app)/projects/[id]/actions.ts</code></td>
+      </tr>
+      <tr>
+        <td>Invoice builder flow or printing</td>
+        <td><code>components/invoices/create-invoice-by-builder.tsx</code>, <code>components/invoices/create-invoice-dialog.tsx</code>, <code>components/invoices/print-button.tsx</code>, <code>app/(jobsyte-app)/invoices/actions.ts</code></td>
+      </tr>
+      <tr>
+        <td>Calendar interactions or report generation</td>
+        <td><code>components/calendar/jobs-calendar-page.tsx</code>, <code>components/ui/calendar.tsx</code></td>
+      </tr>
+      <tr>
+        <td>Search relevance or result categories</td>
+        <td><code>app/(jobsyte-app)/search/page.tsx</code>, <code>app/api/search/suggest/route.ts</code>, <code>components/app-shell/header.tsx</code></td>
+      </tr>
+      <tr>
+        <td>Settings or user preferences</td>
+        <td><code>components/settings/*</code>, <code>app/(jobsyte-app)/settings/actions.ts</code>, <code>lib/settings/preferences.ts</code></td>
+      </tr>
+      <tr>
+        <td>Cron emails or notification text</td>
+        <td><code>app/api/cron/preferences/route.ts</code>, <code>lib/notifications/templates.ts</code>, <code>lib/notifications/send-email.ts</code></td>
+      </tr>
+    </table>
+
+    <h2>10. How To Refactor Safely</h2>
+    <ol>
+      <li>Trace the full vertical slice before changing anything: page route, client component, server action, helper library, tests.</li>
+      <li>Do not move company-scoping logic into the client. Keep tenant guards on the server.</li>
+      <li>Preserve the existing page pattern: server page loads data, client component owns interaction, server action owns mutation.</li>
+      <li>When extracting shared UI, prefer the feature folder first. Promote to <code>components/ui/</code> only when the abstraction is truly general.</li>
+      <li>When refactoring data shapes, update all dependent types and derived views together. Search categories, grouped project views, and calendar job cards are all shape-sensitive.</li>
+      <li>Keep financial values in cents and keep date-only values in <code>YYYY-MM-DD</code> format where existing code expects it.</li>
+      <li>Run lint and relevant tests before considering the refactor done.</li>
+    </ol>
+
+    <h2>11. How To Fix Bugs</h2>
+    <ol>
+      <li>Reproduce the bug in the page route first.</li>
+      <li>Identify whether the failure is in the page query, client state, server action, or shared helper.</li>
+      <li>Check company scoping and auth. Many bugs in Supabase apps come from missing tenant guards.</li>
+      <li>Check date handling. The app uses both date-only fields and timestamp fields, especially in jobs, invoices, and cron logic.</li>
+      <li>Check soft-delete filters. Several list queries intentionally exclude rows where <code>deleted_at</code> is not null.</li>
+      <li>Add a regression test when the bug lives in a helper, formatter, parser, or reusable component.</li>
+      <li>Run <code>npm run lint</code> at minimum before closing the fix.</li>
+    </ol>
+
+    <h2>12. Common Change Cookbook</h2>
+    <table>
+      <tr>
+        <th>Task</th>
+        <th>Files to change</th>
+      </tr>
+      <tr>
+        <td>Add or rename a sidebar destination</td>
+        <td><code>components/app-shell/sidebar-nav.tsx</code>, optionally <code>components/document-title-sync.tsx</code> and breadcrumbs in the new page route</td>
+      </tr>
+      <tr>
+        <td>Change the dashboard month calendar behavior</td>
+        <td><code>app/(jobsyte-app)/dashboard/page.tsx</code>, <code>components/dashboard/month-jobs-calendar.tsx</code></td>
+      </tr>
+      <tr>
+        <td>Change the large calendar page behavior</td>
+        <td><code>app/(jobsyte-app)/calendar/page.tsx</code>, <code>components/calendar/jobs-calendar-page.tsx</code>, <code>components/ui/calendar.tsx</code></td>
+      </tr>
+      <tr>
+        <td>Add a new search target</td>
+        <td><code>app/(jobsyte-app)/search/page.tsx</code>, <code>app/api/search/suggest/route.ts</code>, optionally <code>components/search/recent-searches.tsx</code></td>
+      </tr>
+      <tr>
+        <td>Add a new filter modal to a page</td>
+        <td><code>components/ui/filter-dialog.tsx</code> plus the page-specific client component that owns the filter state</td>
+      </tr>
+      <tr>
+        <td>Adjust invoice due-date defaults</td>
+        <td><code>lib/settings/preferences.ts</code>, <code>app/(jobsyte-app)/invoices/actions.ts</code>, settings cards under <code>components/settings/</code></td>
+      </tr>
+      <tr>
+        <td>Adjust company create/delete behavior</td>
+        <td><code>app/(jobsyte-app)/settings/company-actions.ts</code>, <code>components/app-shell/company-switcher.tsx</code>, <code>lib/company-context.ts</code></td>
+      </tr>
+      <tr>
+        <td>Change release notes shown in app</td>
+        <td><code>lib/release-notes.ts</code>, <code>components/app-shell/version-changelog-dialog.tsx</code>, <code>components/settings/settings-release-notes-card.tsx</code></td>
+      </tr>
+      <tr>
+        <td>Change project preset behavior</td>
+        <td><code>app/(jobsyte-app)/settings/actions.ts</code>, <code>components/settings/settings-project-presets-card.tsx</code>, <code>app/(jobsyte-app)/projects/actions.ts</code>, <code>components/projects/new-project-dialog.tsx</code></td>
+      </tr>
+      <tr>
+        <td>Change payroll-to-accounting syncing rules</td>
+        <td><code>app/(jobsyte-app)/payroll/actions.ts</code>, <code>app/(jobsyte-app)/accounting/actions.ts</code>, <code>components/payroll/payroll-page.tsx</code>, <code>components/accounting/expense-table.tsx</code></td>
+      </tr>
+      <tr>
+        <td>Change export output</td>
+        <td><code>app/api/settings/export/route.ts</code></td>
+      </tr>
+      <tr>
+        <td>Change verification/login callback behavior</td>
+        <td><code>app/auth/callback/route.ts</code>, <code>app/api/auth/verified/route.ts</code>, <code>app/(auth)/*</code></td>
+      </tr>
+    </table>
+
+    <h2>13. Testing And Verification</h2>
+    <p>
+      Current automated tests live under <code>tests/</code>. The test suite
+      currently covers shared helpers and a small number of component-level
+      units, especially around employee dashboard data, filter chips, company
+      context, release notes, dismissed suggestions, email templates, and
+      preference parsing.
+    </p>
+
+    <h3>Current test files</h3>
+    <ul>
+      <li><code>tests/components/employees/dashboard-data.test.ts</code></li>
+      <li><code>tests/components/employees/filter-chip.test.tsx</code></li>
+      <li><code>tests/lib/company-context.test.tsx</code></li>
+      <li><code>tests/lib/dismissed-suggestions.test.ts</code></li>
+      <li><code>tests/lib/notifications/templates.test.ts</code></li>
+      <li><code>tests/lib/release-notes.test.ts</code></li>
+      <li><code>tests/lib/settings/preferences.test.ts</code></li>
+    </ul>
+
+    <h3>Verification workflow</h3>
+    <ol>
+      <li>Run <code>npm run lint</code> for every change.</li>
+      <li>Run <code>npm run test:run</code> when changing shared utilities, parsers, notifications, preference logic, or reusable components.</li>
+      <li>Run <code>npm run build</code> when refactoring route boundaries, shared types, or server components.</li>
+      <li>Do a manual pass on the affected route and at least one small-screen viewport for UI work.</li>
+    </ol>
+
+    <h2>14. Development Conventions</h2>
+    <ul>
+      <li>Prefer server components for data loading and client components for interactivity.</li>
+      <li>Prefer colocated feature files under <code>components/&lt;feature&gt;/</code> instead of creating new broad shared layers.</li>
+      <li>Keep mutation logic in server actions, not in browser-only Supabase calls.</li>
+      <li>Use existing UI primitives from <code>components/ui/</code> before inventing new controls.</li>
+      <li>Preserve the current design language. This codebase already has an established shell, cards, filters, dialogs, and table patterns.</li>
+      <li>Update release notes when a change is user-facing and intended for a shipped version.</li>
+      <li>When a feature introduces a new entity or workflow, add the search integration if users would reasonably expect to find it globally.</li>
+    </ul>
+
+    <h2>15. File Index By Area</h2>
+    <p class="small">
+      This is not every single file body, but it is the complete current module
+      inventory by directory so a developer can locate the right implementation
+      area quickly.
+    </p>
+
+    <h3>Feature component directories</h3>
+    <ul>
+      <li><code>components/accounting/</code>: accounting overview, expense CRUD, profitability, per-project accounting</li>
+      <li><code>components/app-shell/</code>: shell layout, sidebar, header, breadcrumbs, company switchers, changelog dialog</li>
+      <li><code>components/calendar/</code>: full calendar page workbench</li>
+      <li><code>components/dashboard/</code>: dashboard month calendar and quick completion control</li>
+      <li><code>components/employees/</code>: employees, crews, roster, payments, dashboard workforce helpers</li>
+      <li><code>components/invoices/</code>: invoice creation, builder invoice flow, editing, printing, payments</li>
+      <li><code>components/jobs/</code>: add/edit/delete job dialogs, jobs table, superintendent selection</li>
+      <li><code>components/payroll/</code>: payroll screen client</li>
+      <li><code>components/projects/</code>: project list/workbench, dialogs, grouped actions menus, imports, quick job UI</li>
+      <li><code>components/search/</code>: recent searches UI</li>
+      <li><code>components/settings/</code>: settings cards for account, appearance, business profile, security, project presets, release notes</li>
+      <li><code>components/ui/</code>: shared primitives including dialogs, filters, calendar, tables, buttons, drawers, sheets, comboboxes, tooltips</li>
+    </ul>
+
+    <h3>Cross-cutting libraries</h3>
+    <ul>
+      <li><code>lib/supabase/</code>: server, client, admin, and index helpers</li>
+      <li><code>lib/settings/preferences.ts</code>: preference parsing and invoice due-date defaults</li>
+      <li><code>lib/notifications/</code>: email templates and sending</li>
+      <li><code>lib/release-notes.ts</code>: in-app changelog content source</li>
+      <li><code>lib/dismissed-suggestions.ts</code>: UI suggestion-dismiss state</li>
+      <li><code>lib/utils.ts</code>: shared utility helpers</li>
+    </ul>
+
+    <h2>16. Recommended Onboarding Path For A New Developer</h2>
+    <ol>
+      <li>Read <code>README.md</code> for the high-level product summary.</li>
+      <li>Read <code>app/layout.tsx</code> and <code>app/(jobsyte-app)/layout.tsx</code> to understand the shell split.</li>
+      <li>Read <code>lib/company-context.ts</code> and <code>lib/active-company.ts</code> to understand tenant scoping.</li>
+      <li>Read one full vertical such as projects: <code>app/(jobsyte-app)/projects/page.tsx</code>, <code>components/projects/projects-page.tsx</code>, <code>app/(jobsyte-app)/projects/actions.ts</code>.</li>
+      <li>Read one finance vertical such as invoices: <code>app/(jobsyte-app)/invoices/page.tsx</code>, <code>components/invoices/create-invoice-dialog.tsx</code>, <code>app/(jobsyte-app)/invoices/actions.ts</code>.</li>
+      <li>Read <code>app/api/cron/preferences/route.ts</code> and <code>lib/notifications/templates.ts</code> if your work touches notifications or preferences.</li>
+    </ol>
+
+    <h2>17. Final Notes</h2>
+    <p>
+      This handbook is meant to be practical. When the repository changes,
+      update this document at the same time as the feature or refactor so that
+      the next developer can follow the live code instead of reverse-engineering
+      the architecture from scratch.
+    </p>
+  </body>
+</html>

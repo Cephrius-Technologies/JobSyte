@@ -1,9 +1,11 @@
 import { LATEST_RELEASE, RELEASE_NOTES } from "@/lib/release-notes";
+import { describe, expect, it } from "vitest";
 
 describe("release notes metadata", () => {
   it("keeps the latest release pointed at the first changelog entry", () => {
     expect(RELEASE_NOTES.length).toBeGreaterThan(0);
     expect(LATEST_RELEASE).toBe(RELEASE_NOTES[0]);
+    expect(LATEST_RELEASE.version).toBe("v1.0.0");
   });
 
   it("requires each release entry to have user-facing content", () => {

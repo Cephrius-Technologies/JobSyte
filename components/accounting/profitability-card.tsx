@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import type { ProjectProfitability, ProjectStatus } from "@/components/accounting/types";
 
 function money(cents: number) {
-  return (cents / 100).toLocaleString(undefined, {
+  return (cents / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,

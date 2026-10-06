@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import type { ProjectListItem } from "./types";
+import type { EditableProject } from "./types";
 
 type Item = { id: string; name: string };
 
@@ -40,18 +40,34 @@ function normalizeStreetNumber(value: string) {
   return value.replace(/\D+/g, "");
 }
 
+function normalizeState(value: string) {
+  return value.trim().replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase();
+}
+
 function splitProjectAddress(value: string) {
   const normalized = normalizeWhitespace(value);
-  if (!normalized) return { houseNumber: "", streetAddress: "" };
+  if (!normalized) {
+    return { houseNumber: "", streetAddress: "", city: "", state: "" };
+  }
 
-  const firstSpace = normalized.indexOf(" ");
+  const [streetLine = "", city = "", state = ""] = normalized
+    .split(",")
+    .map((part) => normalizeWhitespace(part));
+  const firstSpace = streetLine.indexOf(" ");
   if (firstSpace === -1) {
-    return { houseNumber: normalized, streetAddress: "" };
+    return {
+      houseNumber: streetLine,
+      streetAddress: "",
+      city,
+      state: normalizeState(state),
+    };
   }
 
   return {
-    houseNumber: normalized.slice(0, firstSpace),
-    streetAddress: normalized.slice(firstSpace + 1),
+    houseNumber: streetLine.slice(0, firstSpace),
+    streetAddress: streetLine.slice(firstSpace + 1),
+    city,
+    state: normalizeState(state),
   };
 }
 
@@ -59,6 +75,14 @@ function findItemByName(items: ComboboxItem[], name: string | null) {
   const target = (name ?? "").trim().toLowerCase();
   if (!target) return null;
   return items.find((item) => item.name.trim().toLowerCase() === target) ?? null;
+}
+
+function getInitialCity(project: EditableProject) {
+  return project.project_city ?? splitProjectAddress(project.project_address).city;
+}
+
+function getInitialState(project: EditableProject) {
+  return project.project_state ?? splitProjectAddress(project.project_address).state;
 }
 
 export function EditProjectDialog({
@@ -70,7 +94,7 @@ export function EditProjectDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  project: ProjectListItem;
+  project: EditableProject;
   initialBuilders: Item[];
   initialSubdivisions: Item[];
 }) {
@@ -83,6 +107,10 @@ export function EditProjectDialog({
   );
   const [streetAddress, setStreetAddress] = useState(
     splitProjectAddress(project.project_address).streetAddress,
+  );
+  const [city, setCity] = useState(getInitialCity(project));
+  const [projectState, setProjectState] = useState(
+    getInitialState(project),
   );
   const [builders, setBuilders] = useState<ComboboxItem[]>(initialBuilders);
   const [subdivisions, setSubdivisions] =
@@ -109,6 +137,8 @@ export function EditProjectDialog({
     const splitAddress = splitProjectAddress(project.project_address);
     setHouseNumber(normalizeStreetNumber(splitAddress.houseNumber));
     setStreetAddress(splitAddress.streetAddress);
+    setCity(getInitialCity(project));
+    setProjectState(getInitialState(project));
     setBuilder(findItemByName(initialBuilders, project.builder_name));
     setSubdivision(findItemByName(initialSubdivisions, project.subdivision));
   }, [open, project, initialBuilders, initialSubdivisions]);
@@ -117,10 +147,11 @@ export function EditProjectDialog({
     return (
       houseNumber.trim().length > 0 &&
       streetAddress.trim().length > 0 &&
+      (projectState.trim().length === 0 || projectState.trim().length === 2) &&
       !!builder &&
       !!subdivision
     );
-  }, [houseNumber, streetAddress, builder, subdivision]);
+  }, [houseNumber, streetAddress, projectState, builder, subdivision]);
 
   async function onCreateBuilder(name: string) {
     const res = await createBuilder(name);
@@ -153,6 +184,10 @@ export function EditProjectDialog({
     fd.set("project_id", project.id);
     fd.set("house_number", normalizeStreetNumber(houseNumber));
     fd.set("street_address", toTitleCase(streetAddress));
+    // Preserve the full map-qualified address when users edit projects that
+    // were created with city/state context.
+    fd.set("city", toTitleCase(city));
+    fd.set("state", normalizeState(projectState));
 
     if (builder?.id) fd.set("builder_id", builder.id);
     if (subdivision?.id) fd.set("subdivision_id", subdivision.id);
@@ -177,18 +212,17 @@ export function EditProjectDialog({
         </DialogHeader>
 
         <form
-          className="space-y-4"
+          className="space-y-6"
           onSubmit={(event) => {
             event.preventDefault();
             if (isPending || !canSubmit) return;
             onSubmit();
           }}
         >
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
             <div className="space-y-2">
-              <div className="text-sm font-medium">Street Number</div>
-              <Input
-                value={houseNumber}
+              <label htmlFor="edit-project-dialog-houseNumber" className="text-sm font-medium">Street Number</label>
+              <Input id="edit-project-dialog-houseNumber" value={houseNumber}
                 onChange={(e) => setHouseNumber(normalizeStreetNumber(e.target.value))}
                 onBlur={() =>
                   setHouseNumber((current) => normalizeStreetNumber(current))
@@ -197,15 +231,35 @@ export function EditProjectDialog({
               />
             </div>
 
-            <div className="space-y-2 sm:col-span-2">
-              <div className="text-sm font-medium">Street Address</div>
-              <Input
-                value={streetAddress}
+            <div className="space-y-2 sm:col-span-3">
+              <label htmlFor="edit-project-dialog-streetAddress" className="text-sm font-medium">Street Address</label>
+              <Input id="edit-project-dialog-streetAddress" value={streetAddress}
                 onChange={(e) => setStreetAddress(e.target.value)}
                 onBlur={() =>
                   setStreetAddress((current) => toTitleCase(current))
                 }
                 placeholder="Main St"
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-1">
+              <label htmlFor="edit-project-dialog-city" className="text-sm font-medium">City</label>
+              <Input id="edit-project-dialog-city" value={city}
+                onChange={(e) => setCity(e.target.value)}
+                onBlur={() => setCity((current) => toTitleCase(current))}
+                placeholder="Dallas"
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-1">
+              <label htmlFor="edit-project-dialog-projectState" className="text-sm font-medium">State</label>
+              <Input id="edit-project-dialog-projectState" value={projectState}
+                onChange={(e) => setProjectState(normalizeState(e.target.value))}
+                onBlur={() =>
+                  setProjectState((current) => normalizeState(current))
+                }
+                placeholder="TX"
+                maxLength={2}
               />
             </div>
           </div>
@@ -236,7 +290,7 @@ export function EditProjectDialog({
             }}
           />
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button

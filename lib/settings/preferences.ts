@@ -8,6 +8,8 @@ export type PreferenceSettings = {
   weekly_summary: boolean;
   product_updates: boolean;
   default_due_days: number;
+  weather_city_id?: number;
+  weather_city_name?: string;
   invoice_reminder_last_sent_on?: string;
   weekly_summary_last_sent_on?: string;
   product_updates_last_sent_month?: string;
@@ -49,6 +51,15 @@ export function readPreferenceSettings(userMetadata: unknown): PreferenceSetting
         ? rawSettings.product_updates
         : false,
     default_due_days: clampDueDays(rawSettings.default_due_days, 30),
+    weather_city_id:
+      typeof rawSettings.weather_city_id === "number" &&
+      Number.isSafeInteger(rawSettings.weather_city_id) && rawSettings.weather_city_id > 0
+        ? rawSettings.weather_city_id
+        : undefined,
+    weather_city_name:
+      typeof rawSettings.weather_city_name === "string" && rawSettings.weather_city_name.length <= 200
+        ? rawSettings.weather_city_name
+        : undefined,
     invoice_reminder_last_sent_on:
       typeof rawSettings.invoice_reminder_last_sent_on === "string"
         ? rawSettings.invoice_reminder_last_sent_on

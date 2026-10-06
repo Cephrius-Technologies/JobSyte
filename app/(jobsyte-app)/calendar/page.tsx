@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { format } from "date-fns";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
 import {
   JobsCalendarPageClient,
@@ -90,11 +91,12 @@ export default async function CalendarPage() {
       builder_name: projectMap.get(job.project_id)?.builder_name ?? null,
       subdivision: projectMap.get(job.project_id)?.subdivision ?? null,
     })) as CalendarPageJob[];
+  const todayKey = format(new Date(), "yyyy-MM-dd");
 
   return (
     <div className="space-y-6">
       <BreadcrumbSetter crumbs={[{ label: "Calendar", href: "/calendar" }]} />
-      <JobsCalendarPageClient jobs={jobs} />
+      <JobsCalendarPageClient jobs={jobs} todayKey={todayKey} />
     </div>
   );
 }

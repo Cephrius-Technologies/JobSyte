@@ -116,7 +116,7 @@ export function CrewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
+      <DialogContent className="flex max-h-[90dvh] sm:max-w-2xl flex-col gap-0 overflow-hidden p-0">
         <DialogHeader className="shrink-0 border-b px-6 py-4 pr-12">
           <DialogTitle>
             {isEditing ? `Edit ${initial?.name}` : "New Crew"}
@@ -283,7 +283,7 @@ export function CrewDialog({
                           className={cn(
                             "flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors hover:bg-muted/50",
                             isSelected &&
-                              "border-primary/30 bg-primary/5 hover:bg-primary/10",
+                              "border-border bg-primary/5 hover:bg-muted",
                           )}
                         >
                           <Checkbox

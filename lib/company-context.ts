@@ -8,7 +8,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useState,
+  useMemo,
+  useSyncExternalStore,
 } from "react";
 
 export type Company = {
@@ -33,6 +34,28 @@ const CompanyContext = createContext<CompanyContextValue>({
 });
 
 const STORAGE_KEY = "jobsyte:active-company-id";
+const ACTIVE_COMPANY_EVENT = "jobsyte:active-company-id-change";
+
+function subscribeToActiveCompanyId(onStoreChange: () => void) {
+  const timeoutId = window.setTimeout(onStoreChange, 0);
+
+  function handleStorage(event: StorageEvent) {
+    if (event.key === STORAGE_KEY) onStoreChange();
+  }
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(ACTIVE_COMPANY_EVENT, onStoreChange);
+
+  return () => {
+    window.clearTimeout(timeoutId);
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(ACTIVE_COMPANY_EVENT, onStoreChange);
+  };
+}
+
+function notifyActiveCompanyChange() {
+  window.dispatchEvent(new Event(ACTIVE_COMPANY_EVENT));
+}
 
 export function CompanyProvider({
   companies,
@@ -41,19 +64,28 @@ export function CompanyProvider({
   companies: Company[];
   children: React.ReactNode;
 }) {
-  const [activeId, setActiveId] = useState<string>(() => {
-    if (typeof window === "undefined") return companies[0]?.id ?? "";
-    return localStorage.getItem(STORAGE_KEY) ?? companies[0]?.id ?? "";
-  });
+  const fallbackCompanyId = companies[0]?.id ?? "";
+  const companyIds = useMemo(
+    () => new Set(companies.map((company) => company.id)),
+    [companies],
+  );
+  const activeId = useSyncExternalStore(
+    subscribeToActiveCompanyId,
+    () => {
+      const storedCompanyId = window.localStorage.getItem(STORAGE_KEY) ?? "";
+      return companyIds.has(storedCompanyId) ? storedCompanyId : fallbackCompanyId;
+    },
+    () => fallbackCompanyId,
+  );
 
   const activeCompany =
     companies.find((c) => c.id === activeId) ?? companies[0] ?? null;
 
   const setActiveCompanyId = useCallback((id: string) => {
-    setActiveId(id);
-    localStorage.setItem(STORAGE_KEY, id);
+    window.localStorage.setItem(STORAGE_KEY, id);
     // Set cookie so server components can read the active company
     document.cookie = `jobsyte:active-company-id=${id};path=/;max-age=31536000;samesite=lax`;
+    notifyActiveCompanyChange();
   }, []);
 
   const value: CompanyContextValue = {

@@ -15,6 +15,8 @@ import type {
 type ProjectRow = {
   id: string;
   project_address: string;
+  project_city: string | null;
+  project_state: string | null;
   builder_name: string | null;
   subdivision: string | null;
   builder_id: string | null;
@@ -59,30 +61,65 @@ function toBillingStatuses(
   return statuses;
 }
 
+function isMissingProjectLocationColumnError(message: string | undefined) {
+  const normalized = (message ?? "").toLowerCase();
+  return (
+    normalized.includes("project_city") ||
+    normalized.includes("project_state") ||
+    (normalized.includes("schema cache") && normalized.includes("projects"))
+  );
+}
+
 async function getProjectsPageData(
   supabase: Awaited<ReturnType<typeof createClient>>,
   companyId: string,
 ) {
-  const [projectsRes, buildersRes, subdivisionsRes, jobsRes] =
-    await Promise.all([
-      supabase
-        .from("projects")
-        // Updated to include builder_id and subdivision_id for better filtering and linking in the UI
-        // Reason - preselecting by ID is more reliable than mathcing by name 
-        .select("id, project_address, builder_name, subdivision, builder_id, subdivision_id, created_at")
-        .eq("company_id", companyId)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false }),
-      supabase.from("builders").select("id, name").order("name"),
-      supabase.from("subdivisions").select("id, name").order("name"),
-      supabase
-        .from("jobs")
-        .select(
-          "id, project_id, is_completed, is_invoiced, is_paid, superintendent, created_at",
-        )
-        .eq("company_id", companyId)
-        .is("deleted_at", null),
-    ]);
+  const projectsRes = await supabase
+    .from("projects")
+    // Include location metadata when the database migration has been applied.
+    .select("id, project_address, project_city, project_state, builder_name, subdivision, builder_id, subdivision_id, created_at")
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+
+  let projectsData: ProjectRow[];
+
+  if (
+    projectsRes.error &&
+    isMissingProjectLocationColumnError(projectsRes.error.message)
+  ) {
+    const legacyProjectsRes = await supabase
+      .from("projects")
+      // Backward-compatible fallback: keep existing projects visible before the
+      // nullable city/state columns are deployed.
+      .select("id, project_address, builder_name, subdivision, builder_id, subdivision_id, created_at")
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+
+    projectsData = ((legacyProjectsRes.data ?? []) as Omit<
+      ProjectRow,
+      "project_city" | "project_state"
+    >[]).map((project) => ({
+      ...project,
+      project_city: null,
+      project_state: null,
+    }));
+  } else {
+    projectsData = (projectsRes.data ?? []) as ProjectRow[];
+  }
+
+  const [buildersRes, subdivisionsRes, jobsRes] = await Promise.all([
+    supabase.from("builders").select("id, name").order("name"),
+    supabase.from("subdivisions").select("id, name").order("name"),
+    supabase
+      .from("jobs")
+      .select(
+        "id, project_id, is_completed, is_invoiced, is_paid, superintendent, created_at",
+      )
+      .eq("company_id", companyId)
+      .is("deleted_at", null),
+  ]);
 
   const jobs = (jobsRes.data ?? []) as ProjectJobRow[];
   const projectStats = new Map<
@@ -127,13 +164,15 @@ async function getProjectsPageData(
     projectStats.set(projectId, stat);
   }
 
-  const projects = ((projectsRes.data ?? []) as ProjectRow[]).map((project) => {
+  const projects = projectsData.map((project) => {
     const stat = projectStats.get(project.id);
     const jobCount = stat?.job_count ?? 0;
     const openJobCount = stat?.open_job_count ?? 0;
 
     return {
       ...project,
+      project_city: project.project_city ?? null,
+      project_state: project.project_state ?? null,
       job_count: jobCount,
       open_job_count: openJobCount,
       invoiced_job_count: stat?.invoiced_job_count ?? 0,

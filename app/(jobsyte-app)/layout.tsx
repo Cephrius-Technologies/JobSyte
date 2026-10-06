@@ -69,7 +69,7 @@ export default async function AppLayout({
 
   return (
     <CompanyProvider companies={companies}>
-      <AppShell>{children}</AppShell>
+      <AppShell userId={data.user.id}>{children}</AppShell>
     </CompanyProvider>
   );
 }

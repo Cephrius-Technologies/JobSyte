@@ -3,42 +3,16 @@
     "allow": [
       "Bash(sips -s format png \"Screenshot 2026-05-27 at 14.40.18.heic\" --out /tmp/jobsyte-screenshot.png)",
       "Bash(npm run *)",
-      "Bash(tee /tmp/lint.out)"
+      "Bash(tee /tmp/lint.out)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(echo \"--- exit: $? ---\")"
     ]
   },
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node '/Users/chiedozieehileme/.bridgespace/bin/bs-claude-hook.cjs' user-prompt-submit"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node '/Users/chiedozieehileme/.bridgespace/bin/bs-claude-hook.cjs' stop idle \"Finished working\""
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node '/Users/chiedozieehileme/.bridgespace/bin/bs-claude-hook.cjs' notification needs-input \"Needs input\""
-          }
-        ]
-      }
-    ]
+    "UserPromptSubmit": [],
+    "Stop": [],
+    "Notification": []
   }
 }

@@ -6,6 +6,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCompanyId } from "@/lib/active-company";
 import { revalidatePath } from "next/cache";
+import {
+  getProjectStreetGroupLabel,
+  renameProjectStreetAddress,
+} from "@/components/projects/project-location";
 
 type IdName = { id: string; name: string };
 type ProjectPresetJobInput = {
@@ -44,6 +48,17 @@ function isValidHouseNumber(value: string) {
 
 function normalizeStreetAddress(value: string) {
   return toTitleCase(value);
+}
+
+function normalizeCity(value: string) {
+  return toTitleCase(value);
+}
+
+function normalizeState(value: string) {
+  return normalizeWhitespace(value)
+    .replace(/[^A-Za-z]/g, "")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 function combineProjectAddress(houseNumber: string, streetAddress: string) {
@@ -225,6 +240,24 @@ function parseCompositeCell(value: string) {
 function isMissingStatusColumnError(message: string | undefined) {
   const normalized = (message ?? "").toLowerCase();
   return normalized.includes("column") && normalized.includes("status");
+}
+
+function isMissingProjectLocationColumnError(message: string | undefined) {
+  const normalized = (message ?? "").toLowerCase();
+  return (
+    normalized.includes("project_city") ||
+    normalized.includes("project_state") ||
+    (normalized.includes("schema cache") && normalized.includes("projects"))
+  );
+}
+
+function withoutProjectLocationFields<
+  T extends { project_city?: string | null; project_state?: string | null },
+>(value: T) {
+  const { project_city, project_state, ...rest } = value;
+  void project_city;
+  void project_state;
+  return rest;
 }
 
 async function setProjectStatusActive(projectId: string) {
@@ -798,10 +831,14 @@ export async function createProject(formData: FormData) {
 
   const houseNumberRaw = String(formData.get("house_number") || "");
   const streetAddressRaw = String(formData.get("street_address") || "");
+  const cityRaw = String(formData.get("city") || "");
+  const stateRaw = String(formData.get("state") || "");
   const projectAddressRaw = String(formData.get("project_address") || "");
 
   const houseNumber = normalizeHouseNumber(houseNumberRaw);
   const streetAddress = normalizeStreetAddress(streetAddressRaw);
+  const city = normalizeCity(cityRaw);
+  const projectState = normalizeState(stateRaw);
   const usingSplitAddress =
     houseNumberRaw.trim().length > 0 || streetAddressRaw.trim().length > 0;
   const project_address = usingSplitAddress
@@ -826,6 +863,9 @@ export async function createProject(formData: FormData) {
   }
   if (usingSplitAddress && !isValidHouseNumber(houseNumber)) {
     return { ok: false, message: "Street number must be numeric." };
+  }
+  if (usingSplitAddress && stateRaw.trim() && projectState.length !== 2) {
+    return { ok: false, message: "State must be a two-letter abbreviation." };
   }
   if (!project_address) {
     return { ok: false, message: "Project address is required." };
@@ -911,21 +951,40 @@ export async function createProject(formData: FormData) {
     if (!savePreset.ok) return savePreset;
   }
 
-  const { data, error } = await (
+  const projectInsert = {
+    user_id: user.id,
+    company_id: companyId,
+    project_address,
+    project_city: city || null,
+    project_state: projectState || null,
+    builder_id: finalBuilderId,
+    subdivision_id: finalSubdivisionId,
+    builder_name: builder_name_snapshot, // keep your existing columns as snapshots
+    subdivision: subdivision_snapshot,
+  };
+
+  let insertResult = await (
     await supabase
   )
     .from("projects")
-    .insert({
-      user_id: user.id,
-      company_id: companyId,
-      project_address,
-      builder_id: finalBuilderId,
-      subdivision_id: finalSubdivisionId,
-      builder_name: builder_name_snapshot, // keep your existing columns as snapshots
-      subdivision: subdivision_snapshot,
-    })
+    .insert(projectInsert)
     .select("id")
     .single();
+
+  if (
+    insertResult.error &&
+    isMissingProjectLocationColumnError(insertResult.error.message)
+  ) {
+    insertResult = await (
+      await supabase
+    )
+      .from("projects")
+      .insert(withoutProjectLocationFields(projectInsert))
+      .select("id")
+      .single();
+  }
+
+  const { data, error } = insertResult;
 
   if (error) return { ok: false, message: error.message };
 
@@ -1160,6 +1219,96 @@ export async function deleteProjects(projectIds: string[]) {
   return { ok: true, deletedCount: ownedIds.length };
 }
 
+export async function renameProjectStreetGroup(
+  projectIds: string[],
+  streetAddressRaw: string,
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { ok: false, message: "Session expired. Please log in again." };
+  }
+
+  const companyId = await getActiveCompanyId();
+  if (!companyId) return { ok: false, message: "No active company found." };
+
+  const ids = Array.from(
+    new Set(
+      (projectIds ?? [])
+        .map((id) => (typeof id === "string" ? id.trim() : ""))
+        .filter(Boolean),
+    ),
+  );
+  if (ids.length === 0) {
+    return { ok: false, message: "No projects selected." };
+  }
+
+  const { data: projects, error: projectsError } = await supabase
+    .from("projects")
+    .select("id, project_address")
+    .in("id", ids)
+    .eq("company_id", companyId)
+    .is("deleted_at", null);
+
+  if (projectsError) {
+    return { ok: false, message: "Failed to load street projects." };
+  }
+  if ((projects ?? []).length !== ids.length) {
+    return {
+      ok: false,
+      message: "One or more projects in this street could not be found.",
+    };
+  }
+
+  const streetGroups = new Set(
+    (projects ?? []).map((project) =>
+      getProjectStreetGroupLabel(String(project.project_address)).toLowerCase(),
+    ),
+  );
+  if (streetGroups.size !== 1) {
+    return { ok: false, message: "The selected projects are not in one street." };
+  }
+
+  const updates = (projects ?? []).map((project) => ({
+    id: String(project.id),
+    project_address: renameProjectStreetAddress(
+      String(project.project_address),
+      streetAddressRaw,
+    ),
+  }));
+  if (updates.some((project) => !project.project_address)) {
+    return {
+      ok: false,
+      message: "Every project needs a numeric street number before this street can be renamed.",
+    };
+  }
+
+  const updateResults = await Promise.all(
+    updates.map((project) =>
+      supabase
+        .from("projects")
+        .update({ project_address: project.project_address as string })
+        .eq("id", project.id)
+        .eq("company_id", companyId)
+        .is("deleted_at", null),
+    ),
+  );
+  if (updateResults.some((result) => result.error)) {
+    return { ok: false, message: "Failed to update every project address." };
+  }
+
+  revalidatePath("/projects");
+  revalidatePath("/dashboard");
+  revalidatePath("/accounting");
+  revalidatePath("/calendar");
+  revalidatePath("/map");
+  return { ok: true, updatedCount: updates.length };
+}
+
 export async function editProject(formData: FormData) {
   const supabase = await createClient();
 
@@ -1175,10 +1324,14 @@ export async function editProject(formData: FormData) {
   const projectId = String(formData.get("project_id") || "").trim();
   const houseNumberRaw = String(formData.get("house_number") || "");
   const streetAddressRaw = String(formData.get("street_address") || "");
+  const cityRaw = String(formData.get("city") || "");
+  const stateRaw = String(formData.get("state") || "");
   const projectAddressRaw = String(formData.get("project_address") || "");
 
   const houseNumber = normalizeHouseNumber(houseNumberRaw);
   const streetAddress = normalizeStreetAddress(streetAddressRaw);
+  const city = normalizeCity(cityRaw);
+  const projectState = normalizeState(stateRaw);
   const usingSplitAddress =
     houseNumberRaw.trim().length > 0 || streetAddressRaw.trim().length > 0;
   const project_address = usingSplitAddress
@@ -1203,6 +1356,9 @@ export async function editProject(formData: FormData) {
   }
   if (usingSplitAddress && !isValidHouseNumber(houseNumber)) {
     return { ok: false, message: "Street number must be numeric." };
+  }
+  if (usingSplitAddress && stateRaw.trim() && projectState.length !== 2) {
+    return { ok: false, message: "State must be a two-letter abbreviation." };
   }
   if (!project_address)
     return { ok: false, message: "Project address is required." };
@@ -1267,19 +1423,36 @@ export async function editProject(formData: FormData) {
     subdivision_snapshot = created.data.name;
   }
 
-  const { error: updateErr } = await supabase
+  const projectUpdate = {
+    project_address,
+    project_city: city || null,
+    project_state: projectState || null,
+    builder_id: finalBuilderId,
+    builder_name: builder_name_snapshot,
+    subdivision_id: finalSubdivisionId,
+    subdivision: subdivision_snapshot,
+  };
+
+  let updateResult = await supabase
     .from("projects")
-    .update({
-      project_address,
-      builder_id: finalBuilderId,
-      builder_name: builder_name_snapshot,
-      subdivision_id: finalSubdivisionId,
-      subdivision: subdivision_snapshot,
-    })
+    .update(projectUpdate)
     .eq("id", projectId)
     .eq("user_id", user.id)
     .is("deleted_at", null);
 
+  if (
+    updateResult.error &&
+    isMissingProjectLocationColumnError(updateResult.error.message)
+  ) {
+    updateResult = await supabase
+      .from("projects")
+      .update(withoutProjectLocationFields(projectUpdate))
+      .eq("id", projectId)
+      .eq("user_id", user.id)
+      .is("deleted_at", null);
+  }
+
+  const updateErr = updateResult.error;
   if (updateErr) return { ok: false, message: updateErr.message };
   return { ok: true };
 }

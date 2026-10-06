@@ -1,3 +1,5 @@
+![JobSyte wordmark](public/jobsyte-wordmark-black-on-light.png)
+
 # JobSyte
 
 **Contractor operations, simplified.**

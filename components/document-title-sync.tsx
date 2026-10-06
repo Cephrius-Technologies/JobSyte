@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 function getPageTitle(pathname: string): string | null {
   if (pathname === "/dashboard") return "Dashboard";
   if (pathname.startsWith("/projects")) return "Projects";
+  if (pathname.startsWith("/map")) return "Map";
   if (pathname.startsWith("/calendar")) return "Calendar";
   if (pathname.startsWith("/invoices")) return "Invoices";
   if (pathname.startsWith("/settings")) return "Settings";

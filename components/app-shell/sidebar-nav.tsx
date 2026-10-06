@@ -6,6 +6,7 @@ import {
   DollarSign,
   FileText,
   FolderKanban,
+  BriefcaseBusiness,
   LayoutDashboard,
   Settings,
   Users,
@@ -25,6 +26,7 @@ function getActiveHref(pathname: string) {
     return "/accounting";
   }
   if (pathname.startsWith("/projects")) return "/projects";
+  if (pathname.startsWith("/jobs")) return "/jobs";
   if (pathname.startsWith("/calendar")) return "/calendar";
   if (pathname.startsWith("/invoices")) return "/invoices";
   if (pathname.startsWith("/employees-crews")) return "/employees-crews";
@@ -36,6 +38,7 @@ function getActiveHref(pathname: string) {
 const navItems = [
   { href: "/dashboard",  label: "Dashboard",  icon: LayoutDashboard },
   { href: "/projects",   label: "Projects",   icon: FolderKanban },
+  { href: "/jobs",       label: "Jobs",       icon: BriefcaseBusiness },
   { href: "/calendar",   label: "Calendar",   icon: CalendarDays },
   { href: "/invoices",   label: "Invoices",   icon: FileText },
   { href: "/employees-crews",  label: "Employees & Crews",  icon: Users },
@@ -68,8 +71,8 @@ export function SidebarNav({
               className={cn(
                 "flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium transition",
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <Icon className="size-4" />
@@ -87,10 +90,10 @@ export function SidebarNav({
         const isActive = activeHref === item.href;
         const Icon = item.icon;
         const linkClass = cn(
-          "flex items-center rounded-md border border-transparent transition",
+          "flex items-center rounded-lg text-muted-foreground transition-colors focus-visible:outline-2 focus-visible:outline-ring",
           isActive
-            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-            : "hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
+            ? "bg-muted text-foreground font-medium"
+            : "hover:bg-muted/60 hover:text-foreground",
           collapsed ? "justify-center px-2 py-2.5" : "gap-2 px-3 py-2",
         );
         const linkContent = (
@@ -102,7 +105,7 @@ export function SidebarNav({
 
         if (!collapsed) {
           return (
-            <Link key={item.href} href={item.href} className={linkClass}>
+            <Link key={item.href} href={item.href} aria-current={isActive ? "page" : undefined} className={linkClass}>
               {linkContent}
             </Link>
           );
@@ -113,6 +116,7 @@ export function SidebarNav({
             <TooltipTrigger asChild>
               <Link
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={linkClass}
                 aria-label={item.label}
               >

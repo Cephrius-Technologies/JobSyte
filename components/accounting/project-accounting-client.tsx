@@ -19,7 +19,7 @@ import {
 import type { ProjectExpense, ProjectProfitability } from "@/components/accounting/types";
 
 function money(cents: number) {
-  return (cents / 100).toLocaleString(undefined, {
+  return (cents / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -27,7 +27,7 @@ function money(cents: number) {
 }
 
 function compactMoney(cents: number) {
-  return (cents / 100).toLocaleString(undefined, {
+  return (cents / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     notation: "compact",

@@ -82,7 +82,7 @@ export function CrewsPageClient({
               Back to Employees &amp; Crews
             </Link>
           </Button>
-          <h1 className="text-2xl font-semibold text-primary">Crews</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Crews</h1>
           <p className="text-sm text-muted-foreground">
             {crews.length} crew{crews.length === 1 ? "" : "s"} total
           </p>

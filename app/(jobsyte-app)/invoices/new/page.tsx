@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCompanyId } from "@/lib/active-company";
-import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
 import { CreateInvoiceByBuilder } from "@/components/invoices/create-invoice-by-builder";
 import { readPreferenceSettings } from "@/lib/settings/preferences";
@@ -33,7 +33,7 @@ export default async function NewInvoicePage() {
   const company = companyRes.data;
 
   return (
-    <div className="space-y-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-6 lg:overflow-hidden">
       <BreadcrumbSetter
         crumbs={[
           { label: "Invoices", href: "/invoices" },
@@ -41,14 +41,9 @@ export default async function NewInvoicePage() {
         ]}
       />
 
-      <div>
-        <h1 className="text-xl font-semibold">New Invoice</h1>
-        <p className="text-sm text-muted-foreground">
-          Select a builder, then pick completed jobs across multiple projects.
-        </p>
-      </div>
+      <PageHeader title="New Invoice" description="Select a builder, then choose completed jobs across their projects." className="shrink-0" />
 
-      <Card className="p-4 sm:p-6">
+      <div className="min-h-0 flex-1">
         <CreateInvoiceByBuilder
           builders={buildersRes.data ?? []}
           defaultDueDays={settings.default_due_days}
@@ -58,7 +53,7 @@ export default async function NewInvoicePage() {
             phone: company?.phone ?? "",
           }}
         />
-      </Card>
+      </div>
     </div>
   );
 }

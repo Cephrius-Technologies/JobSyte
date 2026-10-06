@@ -183,7 +183,7 @@ export function ImportProjectJobsButton({
               }}
             />
             {file ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-primary/5 px-3 py-2.5 text-sm">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
                     <FileSpreadsheet className="size-4.5" />
@@ -253,8 +253,8 @@ export function ImportProjectJobsButton({
                   setSummary(null);
                 }}
                 className={cn(
-                  "group relative flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary/30 bg-muted/20 px-4 py-8 text-center transition-colors",
-                  "hover:border-primary/60 hover:bg-primary/5",
+                  "group relative flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20 px-4 py-8 text-center transition-colors",
+                  "hover:border-primary/60 hover:bg-muted/50",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                   "disabled:cursor-not-allowed disabled:opacity-50",
                   isDragging && "border-primary bg-primary/10",

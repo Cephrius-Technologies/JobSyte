@@ -1,9 +1,13 @@
 "use client";
 
-import Image from "next/image";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useBrowserStoredState } from "@/hooks/use-browser-storage";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   ArrowRight,
@@ -14,7 +18,6 @@ import {
   ReceiptText,
   UserRound,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -64,7 +67,7 @@ type RecipientInvoiceGroup = {
 
 function money(cents: number | null) {
   const value = cents ?? 0;
-  return (value / 100).toLocaleString(undefined, {
+  return (value / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
   });
@@ -74,7 +77,7 @@ function formatDate(value: string | null): string {
   if (!value) return "N/A";
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return "N/A";
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -84,6 +87,7 @@ function formatDate(value: string | null): string {
 function getInvoiceStatus(
   dueDate: string | null,
   isPaid: boolean | null,
+  todayKey: string,
 ): InvoiceStatus {
   if (isPaid) return "paid";
   if (!dueDate) return "issued";
@@ -91,7 +95,7 @@ function getInvoiceStatus(
   const due = new Date(`${dueDate}T00:00:00`);
   if (Number.isNaN(due.getTime())) return "issued";
 
-  const today = new Date();
+  const today = new Date(`${todayKey}T00:00:00`);
   today.setHours(0, 0, 0, 0);
 
   return due < today ? "overdue" : "due";
@@ -104,18 +108,6 @@ function statusLabel(status: InvoiceStatus): string {
   return "Issued";
 }
 
-function statusClasses(status: InvoiceStatus): string {
-  if (status === "overdue") {
-    return "border-red-300 bg-red-100 text-red-800";
-  }
-  if (status === "due") {
-    return "border-amber-300 bg-amber-100 text-amber-800";
-  }
-  if (status === "paid") {
-    return "border-green-300 bg-green-100 text-green-800";
-  }
-  return "border-blue-300 bg-blue-100 text-blue-800";
-}
 
 function parseStoredKeys(raw: string | null): string[] | null {
   if (!raw) return null;
@@ -129,52 +121,47 @@ function parseStoredKeys(raw: string | null): string[] | null {
   }
 }
 
+function parseInvoicesView(raw: string | null): ViewMode {
+  return raw === "grouped" ? "grouped" : "list";
+}
+
+function serializeStoredKeys(value: string[] | null) {
+  return value === null ? null : JSON.stringify(value);
+}
+
 function getRecipientLabel(invoice: InvoiceListItem): string {
   return invoice.bill_to_name?.trim() || UNASSIGNED_RECIPIENT_LABEL;
 }
 
 export function InvoicesPageClient({
   invoices,
+  todayKey,
 }: {
   invoices: InvoiceListItem[];
+  todayKey: string;
 }) {
   const [query, setQuery] = useState("");
   const [billToFilter, setBillToFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [view, setView] = useState<ViewMode>(() => {
-    if (typeof window === "undefined") return "list";
-    const savedView = window.localStorage.getItem(INVOICES_VIEW_STORAGE_KEY);
-    return savedView === "grouped" ? "grouped" : "list";
+  const [view, setView] = useBrowserStoredState<ViewMode>({
+    key: INVOICES_VIEW_STORAGE_KEY,
+    defaultValue: "list",
+    parse: parseInvoicesView,
+    serialize: (value) => value,
   });
-  const [expandedRecipients, setExpandedRecipients] = useState<string[] | null>(
-    () => {
-      if (typeof window === "undefined") return null;
-      return parseStoredKeys(
-        window.localStorage.getItem(INVOICES_EXPANDED_RECIPIENTS_STORAGE_KEY),
-      );
-    },
-  );
+  const [expandedRecipients, setExpandedRecipients] = useBrowserStoredState<
+    string[] | null
+  >({
+    key: INVOICES_EXPANDED_RECIPIENTS_STORAGE_KEY,
+    defaultValue: null,
+    parse: parseStoredKeys,
+    serialize: serializeStoredKeys,
+  });
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(
     invoices[0]?.id ?? null,
   );
   const isMobile = useIsMobile();
   const router = useRouter();
-
-  useEffect(() => {
-    window.localStorage.setItem(INVOICES_VIEW_STORAGE_KEY, view);
-  }, [view]);
-
-  useEffect(() => {
-    if (expandedRecipients === null) {
-      window.localStorage.removeItem(INVOICES_EXPANDED_RECIPIENTS_STORAGE_KEY);
-      return;
-    }
-
-    window.localStorage.setItem(
-      INVOICES_EXPANDED_RECIPIENTS_STORAGE_KEY,
-      JSON.stringify(expandedRecipients),
-    );
-  }, [expandedRecipients]);
 
   const billToOptions = useMemo(() => {
     const set = new Set<string>();
@@ -190,7 +177,7 @@ export function InvoicesPageClient({
 
     return invoices
       .filter((invoice) => {
-        const status = getInvoiceStatus(invoice.due_date, invoice.is_paid);
+        const status = getInvoiceStatus(invoice.due_date, invoice.is_paid, todayKey);
         const matchesBillTo =
           billToFilter === "all" || getRecipientLabel(invoice) === billToFilter;
         const matchesStatus = statusFilter === "all" || statusFilter === status;
@@ -207,7 +194,7 @@ export function InvoicesPageClient({
         const bCreated = b.created_at ?? "";
         return bCreated.localeCompare(aCreated);
       });
-  }, [invoices, query, billToFilter, statusFilter]);
+  }, [invoices, query, billToFilter, statusFilter, todayKey]);
 
   const groupedInvoices = useMemo<RecipientInvoiceGroup[]>(() => {
     const recipientMap = new Map<string, InvoiceListItem[]>();
@@ -242,15 +229,15 @@ export function InvoicesPageClient({
             0,
           ),
           paidCount: sortedInvoices.filter((invoice) =>
-            getInvoiceStatus(invoice.due_date, invoice.is_paid) === "paid",
+            getInvoiceStatus(invoice.due_date, invoice.is_paid, todayKey) === "paid",
           ).length,
           overdueCount: sortedInvoices.filter((invoice) =>
-            getInvoiceStatus(invoice.due_date, invoice.is_paid) === "overdue",
+            getInvoiceStatus(invoice.due_date, invoice.is_paid, todayKey) === "overdue",
           ).length,
         };
       })
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [filteredInvoices]);
+  }, [filteredInvoices, todayKey]);
 
   const effectiveExpandedRecipients = useMemo(() => {
     const recipientKeys = new Set(groupedInvoices.map((group) => group.key));
@@ -306,43 +293,22 @@ export function InvoicesPageClient({
     return (
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-xl font-semibold text-primary">Invoices</h1>
+          <PageHeader title="Invoices" description="Create, track, and manage customer invoices." />
           <Link href="/invoices/new" className="w-full sm:w-auto">
             <Button className="w-full sm:w-auto">Create Invoice</Button>
           </Link>
         </div>
-        <Card className="p-8">
-          <div className="flex justify-center">
-            <Image
-              src="/empty_project.png"
-              alt="Invoice"
-              width={192}
-              height={192}
-            />
-          </div>
-          <div className="text-lg text-muted-foreground text-center">You currently don&apos;t have any invoices.</div>
-          <div className="text-md text-center"> Want to create an invoice? <br/> Create one here.</div>
-        <div className="flex justify-center">
-          <Link href="/invoices/new" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto">Create Invoice</Button>
-          </Link>
-          </div>
-        </Card>
+        <EmptyState title="No invoices yet" description="Turn completed jobs into an invoice and keep track of customer payments."
+          action={<Button asChild><Link href="/invoices/new">Create Invoice</Link></Button>} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-primary">Invoices</h1>
-            <p className="text-sm text-muted-foreground">
-              {filteredInvoices.length} Invoice
-              {filteredInvoices.length === 1 ? "" : "s"} shown
-            </p>
-          </div>
+          <PageHeader title="Invoices" description="Create, track, and manage customer invoices." />
 
           <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
             <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
@@ -426,7 +392,7 @@ export function InvoicesPageClient({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {filteredInvoices.length === 0 ? (
             <Card className="p-8">
               <div className="text-sm text-muted-foreground">
@@ -442,7 +408,7 @@ export function InvoicesPageClient({
                 return (
                   <Card
                     key={recipientGroup.key}
-                    className="overflow-hidden border-primary/20"
+                    className="overflow-hidden border-border"
                   >
                     <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                       <button
@@ -481,6 +447,7 @@ export function InvoicesPageClient({
                           const status = getInvoiceStatus(
                             invoice.due_date,
                             invoice.is_paid,
+                            todayKey,
                           );
                           const isSelected =
                             effectiveSelectedInvoiceId === invoice.id;
@@ -489,10 +456,10 @@ export function InvoicesPageClient({
                             <Card
                               key={invoice.id}
                               className={cn(
-                                "border-primary/10 p-3 transition-colors cursor-pointer",
+                                "border-border p-3 transition-colors cursor-pointer",
                                 isSelected
-                                  ? "bg-primary/[0.03] ring-2 ring-primary/20"
-                                  : "hover:bg-primary/5",
+                                  ? "bg-muted/50 ring-1 ring-border"
+                                  : "hover:bg-muted/50",
                               )}
                               onClick={() => {
                                 setSelectedInvoiceId(invoice.id);
@@ -507,12 +474,7 @@ export function InvoicesPageClient({
                                     <div className="break-words font-medium">
                                       {invoice.invoice_number}
                                     </div>
-                                    <Badge
-                                      variant="outline"
-                                      className={statusClasses(status)}
-                                    >
-                                      {statusLabel(status)}
-                                    </Badge>
+                                    <StatusBadge tone={status === "paid" ? "success" : status === "overdue" ? "danger" : status === "due" ? "warning" : "info"}>{statusLabel(status)}</StatusBadge>
                                   </div>
                                   <div className="text-xs text-muted-foreground">
                                     {money(invoice.subtotal_cents)} • Invoice{" "}
@@ -544,110 +506,59 @@ export function InvoicesPageClient({
               })}
             </div>
           ) : (
-            filteredInvoices.map((invoice) => {
-              const status = getInvoiceStatus(invoice.due_date, invoice.is_paid);
-              const isSelected = effectiveSelectedInvoiceId === invoice.id;
-
-              return (
-                <Card
-                  key={invoice.id}
-                  className={cn(
-                    "border-primary/10 p-3 transition-colors sm:p-5 cursor-pointer",
-                    isSelected
-                      ? "bg-primary/[0.03] ring-2 ring-primary/20"
-                      : "hover:bg-primary/5",
-                  )}
-                  onClick={() => {
-                    setSelectedInvoiceId(invoice.id);
-                    if (isMobile) {
-                      router.push(`/invoices/${invoice.id}`);
-                    }
-                  }}
-                >
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5 rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">
-                          {money(invoice.subtotal_cents)}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-xl font-semibold leading-tight">
-                              {invoice.invoice_number}
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className={statusClasses(status)}
-                            >
-                              {statusLabel(status)}
-                            </Badge>
-                          </div>
-
-                          <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <UserRound className="size-4" />
-                              Bill To: {invoice.bill_to_name ?? "Unassigned"}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <ReceiptText className="size-4" />
-                              From: {invoice.contractor_name ?? "Unknown"}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <CalendarDays className="size-4" />
-                              Invoice Date: {formatDate(invoice.invoice_date)}
-                            </div>
-                            <div>Due Date: {formatDate(invoice.due_date)}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div onClick={(event) => event.stopPropagation()}>
-                        <Button asChild variant="outline" size="sm">
-                          <Link
-                            href={`/invoices/${invoice.id}`}
-                            onClick={() => setSelectedInvoiceId(invoice.id)}
-                          >
-                            View Invoice
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <Link
-                        href={`/invoices/${invoice.id}`}
-                        className="inline-flex items-center gap-1 text-lg font-medium text-primary dark:text-white dark:hover:text-muted-foreground/90 transition delay-100"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setSelectedInvoiceId(invoice.id);
-                        }}
-                      >
-                        Open Invoice
-                        <ArrowRight className="size-5" />
-                      </Link>
-                    </div>
+            <>
+            <div className="divide-y rounded-xl border bg-card lg:hidden">
+              {filteredInvoices.map((invoice) => {
+                const status = getInvoiceStatus(invoice.due_date, invoice.is_paid, todayKey);
+                return <Link key={invoice.id} href={`/invoices/${invoice.id}`} className="block space-y-3 p-4 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring" onClick={() => setSelectedInvoiceId(invoice.id)}>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <span className="font-medium">{invoice.invoice_number}</span>
+                    <span className="font-semibold tabular-nums">{money(invoice.subtotal_cents)}</span>
                   </div>
-                </Card>
-              );
-            })
+                  <p className="text-sm text-muted-foreground break-words">{invoice.bill_to_name ?? "Unassigned builder"}</p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <StatusBadge tone={status === "paid" ? "success" : status === "overdue" ? "danger" : status === "due" ? "warning" : "info"}>{statusLabel(status)}</StatusBadge>
+                    <span className="text-xs text-muted-foreground">Due {formatDate(invoice.due_date)}</span>
+                  </div>
+                </Link>;
+              })}
+            </div>
+            <div className="hidden min-w-0 overflow-hidden rounded-xl border bg-card lg:block">
+              <Table>
+                <TableHeader><TableRow><TableHead>Invoice #</TableHead><TableHead>Builder</TableHead><TableHead>Invoice Date</TableHead><TableHead>Due Date</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                <TableBody>{filteredInvoices.map((invoice) => {
+                  const status = getInvoiceStatus(invoice.due_date, invoice.is_paid, todayKey);
+                  return <TableRow key={invoice.id} className="cursor-pointer" data-state={effectiveSelectedInvoiceId === invoice.id ? "selected" : undefined}
+                    onClick={() => { setSelectedInvoiceId(invoice.id); if (isMobile) router.push(`/invoices/${invoice.id}`); }}>
+                    <TableCell><Link href={`/invoices/${invoice.id}`} className="font-medium hover:text-primary hover:underline" onClick={(event) => event.stopPropagation()}>{invoice.invoice_number}</Link></TableCell>
+                    <TableCell>{invoice.bill_to_name ?? "Unassigned"}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDate(invoice.invoice_date)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDate(invoice.due_date)}</TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">{money(invoice.subtotal_cents)}</TableCell>
+                    <TableCell><StatusBadge tone={status === "paid" ? "success" : status === "overdue" ? "danger" : status === "due" ? "warning" : "info"}>{statusLabel(status)}</StatusBadge></TableCell>
+                  </TableRow>;
+                })}</TableBody>
+              </Table>
+            </div>
+            </>
           )}
         </div>
 
-        <Card className="hidden h-fit border-primary/20 p-5 xl:block xl:sticky xl:top-4">
+        <Card className="hidden h-fit border-border p-5 xl:block xl:sticky xl:top-4">
           {selectedInvoice ? (
-            <div className="space-y-5">
+            <div className="space-y-6">
               <div>
-                <div className="text-sm font-medium text-primary/80">
+                <div className="text-sm font-medium text-muted-foreground">
                   Selected Invoice
                 </div>
-                <div className="mt-2 text-3xl font-semibold leading-tight">
+                <div className="mt-2 text-xl font-semibold tracking-tight leading-snug">
                   {selectedInvoice.invoice_number}
                 </div>
               </div>
 
-              <div className="rounded-md border border-primary/20 bg-primary/[0.03] p-4">
+              <div className="rounded-md border border-border bg-muted/30 p-4">
                 <div className="space-y-2">
-                  <div className="text-sm text-primary/80">Total</div>
+                  <div className="text-sm text-muted-foreground">Total</div>
                   <div className="text-4xl font-semibold leading-none">
                     {money(selectedInvoice.subtotal_cents)}
                   </div>

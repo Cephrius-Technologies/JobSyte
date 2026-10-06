@@ -188,7 +188,7 @@ export function EmployeeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
+      <DialogContent className="flex max-h-[90dvh] sm:max-w-2xl flex-col gap-0 overflow-hidden p-0">
         <DialogHeader className="shrink-0 border-b px-6 py-4 pr-12">
           <DialogTitle>
             {isEditing ? `Edit ${initial?.name}` : "New Employee"}
@@ -505,7 +505,7 @@ export function EmployeeDialog({
                 )}
 
                 {paymentMethod === "epay" && (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="space-y-1.5">
                       <Label htmlFor="pd-epay-platform">Platform</Label>
                       <Input
@@ -528,7 +528,7 @@ export function EmployeeDialog({
                 )}
 
                 {paymentMethod === "wire" && (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="space-y-1.5">
                       <Label htmlFor="pd-routing">Routing Number</Label>
                       <Input
@@ -608,7 +608,7 @@ export function EmployeeDialog({
               Employee password ready
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-6">
             <p className="text-sm font-medium text-destructive">
               This password is shown once. Copy it now \u2014 it cannot be
               retrieved later.

@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { SidebarNav } from "./sidebar-nav";
 import { CompanySwitcher } from "./company-switcher";
+import { SidebarBrand } from "./sidebar-brand";
 import { VersionChangelogDialog } from "./version-changelog-dialog";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +45,7 @@ export function MobileSidebar() {
           size="icon"
           aria-label="Open navigation menu"
           className={cn(
-            "h-9 w-9 shrink-0 cursor-pointer border-primary/30 hover:bg-primary/10 md:hidden",
+            "h-9 w-9 shrink-0 cursor-pointer border-border hover:bg-muted md:hidden",
           )}
         >
           <Menu className="size-4" />
@@ -53,23 +54,24 @@ export function MobileSidebar() {
 
       <SheetContent
         side="left"
-        className="flex w-[82vw] max-w-[320px] flex-col gap-0 bg-background p-0"
+        className="flex max-w-[320px] flex-col gap-0 overflow-hidden rounded-2xl border border-sidebar-border bg-sidebar p-0 shadow-xl data-[side=left]:inset-y-3 data-[side=left]:left-3 data-[side=left]:h-[calc(100dvh-1.5rem)] data-[side=left]:w-[82vw] data-[side=left]:sm:max-w-[320px]"
       >
-        <SheetHeader className="p-3">
+        <SheetHeader className="p-4 pr-14">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SheetDescription className="sr-only">
             Jump to any section of JobSyte.
           </SheetDescription>
+          <SidebarBrand />
           <CompanySwitcher />
         </SheetHeader>
 
         <Separator />
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <SidebarNav />
         </div>
 
-        <div className="mt-auto flex items-center gap-2 border-t border-primary/10 p-3 text-xs text-muted-foreground">
+        <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground">
           <VersionChangelogDialog />
           <a
             href="https://cephrius.com"
@@ -77,7 +79,7 @@ export function MobileSidebar() {
           >
             Cephrius Technologies
           </a>
-          <span>© {new Date().getFullYear()}</span>
+          <span>© JobSyte</span>
         </div>
       </SheetContent>
     </Sheet>

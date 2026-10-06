@@ -157,7 +157,7 @@ export function EmployeeRosterPageClient({
               Back to Employees &amp; Crews
             </Link>
           </Button>
-          <h1 className="text-2xl font-semibold text-primary">Employees</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Employees</h1>
           <p className="text-sm text-muted-foreground">
             {employees.length} employee{employees.length === 1 ? "" : "s"} total
           </p>

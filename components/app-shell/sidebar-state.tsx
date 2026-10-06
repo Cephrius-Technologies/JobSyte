@@ -1,12 +1,20 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import { useBrowserStoredState } from "@/hooks/use-browser-storage";
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "app-shell:sidebar-collapsed";
 
 type SidebarState = {
   collapsed: boolean;
-  setCollapsed: (value: boolean) => void;
+  setCollapsed: Dispatch<SetStateAction<boolean>>;
   toggleCollapsed: () => void;
 };
 
@@ -17,35 +25,25 @@ export function SidebarStateProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return (
-        window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "1"
-      );
-    } catch {
-      return false;
-    }
+  const [collapsed, setCollapsed] = useBrowserStoredState({
+    key: SIDEBAR_COLLAPSED_STORAGE_KEY,
+    defaultValue: false,
+    parse: (raw) => raw === "1",
+    serialize: (value) => (value ? "1" : "0"),
   });
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        SIDEBAR_COLLAPSED_STORAGE_KEY,
-        collapsed ? "1" : "0",
-      );
-    } catch {
-      // Ignore storage write issues.
-    }
-  }, [collapsed]);
+  const toggleCollapsed = useCallback(
+    () => setCollapsed((current) => !current),
+    [setCollapsed],
+  );
 
   const value = useMemo(
     () => ({
       collapsed,
       setCollapsed,
-      toggleCollapsed: () => setCollapsed((current) => !current),
+      toggleCollapsed,
     }),
-    [collapsed],
+    [collapsed, setCollapsed, toggleCollapsed],
   );
 
   return (

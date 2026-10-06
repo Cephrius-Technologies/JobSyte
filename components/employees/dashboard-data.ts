@@ -446,7 +446,7 @@ export function buildWorkforceDashboardModel({
           id: `payment-${payment.id}`,
           kind: "payroll_logged",
           title: `Payroll recorded for ${payeeName}`,
-          detail: `${(payment.amount_cents / 100).toLocaleString(undefined, {
+          detail: `${(payment.amount_cents / 100).toLocaleString("en-US", {
             style: "currency",
             currency: "USD",
             maximumFractionDigits: 0,

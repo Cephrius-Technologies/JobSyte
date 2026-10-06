@@ -3,11 +3,10 @@
 // Onboarding: project detail job table. Row-level edits are delegated to
 // `edit-job-dialog.tsx`, deletion to `delete-job-dialog.tsx`, and payment /
 // invoice badges are driven by columns loaded in the project detail route.
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { CheckCircle2, DollarSign, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle2, DollarSign, MoreHorizontal, Pencil, Plus, Search, StickyNote, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -39,11 +38,18 @@ import { AddJobDialog } from "@/components/jobs/add-job-dialog";
 import { HighlightScroller } from "@/components/ui/highlight-scroller";
 import { DeleteJobDialog } from "@/components/jobs/delete-job-dialog";
 import { EditJobDialog } from "@/components/jobs/edit-job-dialog";
+import { getLocalDateKey } from "@/components/jobs/job-status";
+import { JobStatusBadges } from "@/components/jobs/job-status-badges";
+import { formatJobDisplayId } from "@/lib/jobs/job-id";
+import { Badge } from "../ui/badge";
+import { JobNotesDialog } from "@/components/projects/project-notes";
+import type { ProjectNote } from "@/lib/projects/notes";
 
 export type JobRow = {
   id: string;
   title: string;
   price_cents: number;
+  scheduled_start: string | null;
   scheduled_completion: string | null;
   is_completed: boolean;
   superintendent: string | null;
@@ -56,7 +62,7 @@ export type JobRow = {
 
 function formatMoney(cents: number) {
   const dollars = cents / 100;
-  return dollars.toLocaleString(undefined, {
+  return dollars.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
   });
@@ -73,48 +79,61 @@ function formatDate(value: string | null) {
   });
 }
 
-function JobStatusBadges({ job }: { job: JobRow }) {
+function JobNotesButton({ count, onClick }: { count: number; onClick: () => void }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Completion and billing can both be true, so render badges additively. */}
-      {job.is_completed ? (
-        <Badge>Completed</Badge>
-      ) : (
-        <Badge variant="secondary">In progress</Badge>
-      )}
-      {job.is_invoiced && (
-        <Badge
-          variant="outline"
-          className="border-violet-300 bg-violet-50 text-violet-700"
-        >
-          Invoiced
-        </Badge>
-      )}
-      {job.is_paid && (
-        <Badge className="bg-green-600 text-white hover:bg-green-600">
-          Paid
-        </Badge>
-      )}
-    </div>
+    <button
+      type="button"
+      className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+      onClick={onClick}
+    >
+      <StickyNote className="size-3.5" />
+      {count > 0 ? `${count} notes` : "Add note"}
+    </button>
   );
 }
 
 export function JobsTable({
   jobs,
   projectId,
+  notes,
+  currentUserId,
 }: {
   jobs: JobRow[];
   projectId: string;
+  notes: ProjectNote[];
+  currentUserId: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [filter, setFilter] = useState<"all" | "open" | "done">("all");
   const [isPending, startTransition] = useTransition();
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<JobRow | null>(null);
+  const [notesJob, setNotesJob] = useState<JobRow | null>(null);
+  const linkedJobId = searchParams.get("noteJob");
+  useEffect(() => {
+    if (!linkedJobId) return;
+    const linkedJob = jobs.find((job) => job.id === linkedJobId);
+    if (!linkedJob) return;
+    const timeoutId = window.setTimeout(() => setNotesJob(linkedJob), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [jobs, linkedJobId]);
   const [query, setQuery] = useState("");
   const [addJobOpen, setAddJobOpen] = useState(false);
   const [addJobInitialTitle, setAddJobInitialTitle] = useState("");
   const [addJobSeed, setAddJobSeed] = useState(0);
+  const today = getLocalDateKey(new Date());
+  const notesByJob = useMemo(() => {
+    const grouped = new Map<string, ProjectNote[]>();
+    for (const note of notes) {
+      if (!note.job_id) continue;
+      const group = grouped.get(note.job_id) ?? [];
+      group.push(note);
+      grouped.set(note.job_id, group);
+    }
+    return grouped;
+  }, [notes]);
 
   const filtered = useMemo(() => {
     let list = jobs;
@@ -129,6 +148,7 @@ export function JobsTable({
         j.title.toLowerCase().includes(q) ||
         (j.superintendent ?? "").toLowerCase().includes(q) ||
         (j.completed_by_name ?? "").toLowerCase().includes(q) ||
+        (j.scheduled_start ?? "").toLowerCase().includes(q) ||
         (j.scheduled_completion ?? "").toLowerCase().includes(q)
       );
     });
@@ -146,7 +166,11 @@ export function JobsTable({
     () => jobs.some((j) => (j.completed_by_name ?? "").trim().length > 0),
     [jobs],
   );
-  const showScheduled = useMemo(
+  const showScheduledStart = useMemo(
+    () => jobs.some((j) => (j.scheduled_start ?? "").trim().length > 0),
+    [jobs],
+  );
+  const showScheduledCompletion = useMemo(
     () => jobs.some((j) => (j.scheduled_completion ?? "").trim().length > 0),
     [jobs],
   );
@@ -265,7 +289,7 @@ export function JobsTable({
       <div className="md:hidden space-y-2">
         {filtered.length === 0 ? (
           <div className="rounded-md border p-4 text-sm text-muted-foreground">
-            No jobs match this filter.
+            {jobs.length === 0 ? "No jobs yet. Use Add Job to start planning work for this project." : "No jobs match this filter. Try a different search or status."}
           </div>
         ) : (
           filtered.map((job) => (
@@ -280,6 +304,10 @@ export function JobsTable({
               >
                 <div>
                   <div className="font-medium leading-tight">{job.title}</div>
+                  <JobNotesButton count={notesByJob.get(job.id)?.length ?? 0} onClick={() => setNotesJob(job)} />
+                  <div className="font-mono text-xs text-muted-foreground" title={job.id}>
+                    Job ID: {formatJobDisplayId(job.id)}
+                  </div>
                   <div className="text-sm text-muted-foreground">
                     {formatMoney(job.price_cents)}
                   </div>
@@ -352,10 +380,15 @@ export function JobsTable({
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <JobStatusBadges job={job} />
-                {showScheduled && (
+                <JobStatusBadges job={job} today={today} />
+                {showScheduledStart && job.scheduled_start && (
                   <span className="text-xs text-muted-foreground">
-                    {formatDate(job.scheduled_completion)}
+                    Starts {formatDate(job.scheduled_start)}
+                  </span>
+                )}
+                {showScheduledCompletion && job.scheduled_completion && (
+                  <span className="text-xs text-muted-foreground">
+                    Due {formatDate(job.scheduled_completion)}
                   </span>
                 )}
               </div>
@@ -385,9 +418,11 @@ export function JobsTable({
         <Table>
           <TableHeader>
             <TableRow className="border-b bg-muted/20 hover:bg-muted/20">
+              <TableHead className="h-11">Job ID</TableHead>
               <TableHead className="h-11">Job Title</TableHead>
-              <TableHead className="h-11">Price</TableHead>
-              {showScheduled && <TableHead className="h-11">Scheduled For</TableHead>}
+              <TableHead className="h-11 text-right">Price</TableHead>
+              {showScheduledStart && <TableHead className="h-11">Scheduled Start</TableHead>}
+              {showScheduledCompletion && <TableHead className="h-11">Scheduled Completion</TableHead>}
               {showSuperintendent && <TableHead className="h-11">Superintendent / GC</TableHead>}
               {showCompletedBy && <TableHead className="h-11">Completed By</TableHead>}
               <TableHead className="h-11">Status</TableHead>
@@ -400,20 +435,31 @@ export function JobsTable({
               <TableRow>
                 <TableCell
                   colSpan={
-                    4 + (showScheduled ? 1 : 0) + (showSuperintendent ? 1 : 0)
+                    5 + (showScheduledStart ? 1 : 0) + (showScheduledCompletion ? 1 : 0) + (showSuperintendent ? 1 : 0)
                     + (showCompletedBy ? 1 : 0)
                   }
                   className="text-sm text-muted-foreground"
                 >
-                  No jobs match this filter.
+                  {jobs.length === 0 ? "No jobs yet. Use Add Job to start planning work for this project." : "No jobs match this filter. Try a different search or status."}
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((job) => (
                 <TableRow key={job.id} data-highlight-id={job.id} className="h-14">
-                  <TableCell className="font-medium">{job.title}</TableCell>
-                  <TableCell className="tabular-nums">{formatMoney(job.price_cents)}</TableCell>
-                  {showScheduled && (
+                  <TableCell className="font-mono text-xs text-muted-foreground" title={job.id}>
+                    <Badge>
+                      {formatJobDisplayId(job.id)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{job.title}</div>
+                    <JobNotesButton count={notesByJob.get(job.id)?.length ?? 0} onClick={() => setNotesJob(job)} />
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{formatMoney(job.price_cents)}</TableCell>
+                  {showScheduledStart && (
+                    <TableCell className="text-muted-foreground">{formatDate(job.scheduled_start)}</TableCell>
+                  )}
+                  {showScheduledCompletion && (
                     <TableCell className="text-muted-foreground">{formatDate(job.scheduled_completion)}</TableCell>
                   )}
                   {showSuperintendent && <TableCell className="text-muted-foreground">{job.superintendent ?? "—"}</TableCell>}
@@ -423,7 +469,7 @@ export function JobsTable({
                     </TableCell>
                   )}
                   <TableCell>
-                    <JobStatusBadges job={job} />
+                    <JobStatusBadges job={job} today={today} />
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -522,6 +568,23 @@ export function JobsTable({
           onOpenChange={(open) => {
             if (!open) setEditingJob(null);
           }}
+        />
+      )}
+      {notesJob && (
+        <JobNotesDialog
+          key={notesJob.id}
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setNotesJob(null);
+              if (linkedJobId) router.replace(pathname);
+            }
+          }}
+          projectId={projectId}
+          jobId={notesJob.id}
+          jobTitle={notesJob.title}
+          notes={notesByJob.get(notesJob.id) ?? []}
+          currentUserId={currentUserId}
         />
       )}
       <AddJobDialog

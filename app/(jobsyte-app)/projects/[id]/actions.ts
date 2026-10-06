@@ -96,6 +96,7 @@ export async function createJob(projectId: string, formData: FormData) {
   const scheduled_completion = String(
     formData.get("scheduled_completion") || "",
   ).trim();
+  const scheduledStart = String(formData.get("scheduled_start") || "").trim() || null;
   const superintendentRaw = toTitleCase(
     String(formData.get("superintendent") || ""),
   );
@@ -129,6 +130,7 @@ export async function createJob(projectId: string, formData: FormData) {
     company_id: companyId,
     title,
     price_cents,
+    scheduled_start: scheduledStart,
     scheduled_completion: scheduledCompletion,
     superintendent,
     completed_by_type: completedByType,
@@ -154,6 +156,9 @@ export async function toggleJobComplete(jobId: string, nextCompleted: boolean) {
 
   if (userError || !user) redirect("/login");
 
+  const companyId = await getActiveCompanyId();
+  if (!companyId) return { ok: false, message: "No active company found." };
+
   const { data, error } = await supabase
     .from("jobs")
     .update({
@@ -161,6 +166,7 @@ export async function toggleJobComplete(jobId: string, nextCompleted: boolean) {
       completed_at: nextCompleted ? new Date().toISOString() : null,
     })
     .eq("id", jobId)
+    .eq("company_id", companyId)
     .is("deleted_at", null)
     .select("project_id")
     .maybeSingle();
@@ -183,12 +189,16 @@ export async function editJob(formData: FormData) {
 
   if (userError || !user) redirect("/login");
 
+  const companyId = await getActiveCompanyId();
+  if (!companyId) return { ok: false, message: "No active company found." };
+
   const jobId = String(formData.get("job_id") || "").trim();
   const title = toTitleCase(String(formData.get("title") || ""));
   const priceRaw = String(formData.get("price") || "").trim();
   const scheduled_completion = String(
     formData.get("scheduled_completion") || "",
   ).trim();
+  const scheduledStart = String(formData.get("scheduled_start") || "").trim() || null;
   const superintendentRaw = toTitleCase(
     String(formData.get("superintendent") || ""),
   );
@@ -215,11 +225,12 @@ export async function editJob(formData: FormData) {
   if (price_cents === null)
     return { ok: false, message: "Enter a valid price." };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("jobs")
     .update({
       title,
       price_cents,
+      scheduled_start: scheduledStart,
       scheduled_completion: scheduledCompletion,
       superintendent,
       completed_by_type: completedByType,
@@ -227,9 +238,13 @@ export async function editJob(formData: FormData) {
       completed_by_name: completedByName,
     })
     .eq("id", jobId)
-    .is("deleted_at", null);
+    .eq("company_id", companyId)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
 
   if (error) return { ok: false, message: error.message };
+  if (!data) return { ok: false, message: "Job not found." };
   return { ok: true };
 }
 
@@ -242,10 +257,14 @@ export async function deleteJob(jobId: string) {
 
   if (userError || !user) redirect("/login");
 
+  const companyId = await getActiveCompanyId();
+  if (!companyId) return { ok: false, message: "No active company found." };
+
   const { data, error } = await supabase
     .from("jobs")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", jobId)
+    .eq("company_id", companyId)
     .is("deleted_at", null)
     .select("id, project_id")
     .maybeSingle();

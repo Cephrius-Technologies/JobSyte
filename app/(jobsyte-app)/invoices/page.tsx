@@ -1,6 +1,7 @@
 // Onboarding: invoice list server page. Detailed invoice creation/editing lives
 // in `components/invoices/*`; persistence lives in this route group's actions.
 import { redirect } from "next/navigation";
+import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCompanyId } from "@/lib/active-company";
 import { Card } from "@/components/ui/card";
@@ -47,7 +48,10 @@ export default async function InvoicesPage() {
   return (
     <div className="space-y-6">
       <BreadcrumbSetter crumbs={[{ label: "Invoices", href: "/invoices" }]} />
-      <InvoicesPageClient invoices={(invoices ?? []) as InvoiceListItem[]} />
+      <InvoicesPageClient
+        invoices={(invoices ?? []) as InvoiceListItem[]}
+        todayKey={format(new Date(), "yyyy-MM-dd")}
+      />
     </div>
   );
 }

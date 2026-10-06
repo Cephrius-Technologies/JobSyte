@@ -10,6 +10,8 @@ import {
   withUpdatedPreferenceSettings,
 } from "@/lib/settings/preferences";
 import { revalidatePath } from "next/cache";
+import { getWeatherCity, searchWeatherCities as findWeatherCities } from "@/lib/weather/open-meteo";
+import type { WeatherCity } from "@/lib/weather/open-meteo";
 
 type ActionResult = { ok: true; message?: string } | { ok: false; message: string };
 type PresetMutationResult =
@@ -363,6 +365,53 @@ export async function updatePreferences(input: PreferencesInput): Promise<Action
   if (updateError) return { ok: false, message: updateError.message };
 
   return { ok: true, message: "Preferences saved." };
+}
+
+export async function searchWeatherCities(query: string): Promise<{ ok: true; cities: WeatherCity[] } | { ok: false; message: string }> {
+  const { user, error } = await getAuthenticatedClient();
+  if (error || !user) return { ok: false, message: error ?? "Unauthorized." };
+  if (typeof query !== "string" || query.trim().length < 2 || query.trim().length > 100) {
+    return { ok: true, cities: [] };
+  }
+  if (process.env.NODE_ENV === "production" && !process.env.OPEN_METEO_API_KEY) {
+    return { ok: false, message: "Configure an Open-Meteo API key to search cities." };
+  }
+  try {
+    return { ok: true, cities: await findWeatherCities(query) };
+  } catch {
+    return { ok: false, message: "City search is unavailable right now." };
+  }
+}
+
+export async function updateWeatherCity(cityId: number | null): Promise<ActionResult> {
+  const { supabase, user, error } = await getAuthenticatedClient();
+  if (error || !user) return { ok: false, message: error ?? "Unauthorized." };
+  if (cityId !== null && (!Number.isSafeInteger(cityId) || cityId <= 0)) {
+    return { ok: false, message: "Choose a city from the search results." };
+  }
+
+  let city: WeatherCity | null = null;
+  if (cityId !== null) {
+    try {
+      city = await getWeatherCity(cityId);
+    } catch {
+      return { ok: false, message: "Could not verify that city right now." };
+    }
+    if (!city) return { ok: false, message: "Could not verify that city right now." };
+  }
+
+  const cityName = city
+    ? [city.name, city.admin1, city.country].filter(Boolean).join(", ")
+    : undefined;
+  const nextMetadata = withUpdatedPreferenceSettings(user.user_metadata, {
+    weather_city_id: city?.id,
+    weather_city_name: cityName,
+  });
+  const { error: updateError } = await supabase.auth.updateUser({ data: nextMetadata });
+  if (updateError) return { ok: false, message: updateError.message };
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+  return { ok: true, message: city ? `Weather location set to ${cityName}.` : "Weather location set to automatic." };
 }
 
 export async function updateAccountEmail(input: {

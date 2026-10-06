@@ -56,7 +56,7 @@ export type EditableInvoice = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function money(cents: number | null | undefined) {
-  return ((cents ?? 0) / 100).toLocaleString(undefined, {
+  return ((cents ?? 0) / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
   });
@@ -274,7 +274,7 @@ export function EditInvoiceDialog({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] max-w-4xl overflow-y-auto p-4 sm:w-[calc(100vw-2rem)] sm:p-6">
+      <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] overflow-y-auto p-4 sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:p-6">
         <DialogHeader>
           <DialogTitle>Edit {invoice.invoice_number}</DialogTitle>
         </DialogHeader>
@@ -487,7 +487,7 @@ export function EditInvoiceDialog({
             )}
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button
@@ -507,5 +507,3 @@ export function EditInvoiceDialog({
     </Dialog>
   );
 }
-
-

@@ -16,7 +16,7 @@ function formatDate(value: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "N/A";
 
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -29,25 +29,25 @@ export function SettingsAccountDetailsCard({
   account,
 }: SettingsAccountDetailsCardProps) {
   return (
-    <Card className="space-y-4 p-5">
+    <Card className="min-w-0 gap-4 p-5">
       <div className="flex items-center gap-2 text-lg font-semibold">
-        <Info className="size-4 text-primary" />
+        <Info className="size-4 text-muted-foreground" />
         Account Details
       </div>
 
       <div className="space-y-2 text-sm">
         <div>
-          <div className="font-medium text-primary/80">Current Email</div>
-          <div className="text-muted-foreground">{account.email}</div>
+          <div className="font-medium text-muted-foreground">Current Email</div>
+          <div className="break-all text-muted-foreground">{account.email}</div>
         </div>
         <div>
-          <div className="font-medium text-primary/80">Account Created</div>
+          <div className="font-medium text-muted-foreground">Account Created</div>
           <div className="text-muted-foreground">
             {formatDate(account.createdAt)}
           </div>
         </div>
         <div>
-          <div className="font-medium text-primary/80">Last Sign In</div>
+          <div className="font-medium text-muted-foreground">Last Sign In</div>
           <div className="text-muted-foreground">
             {formatDate(account.lastSignInAt)}
           </div>

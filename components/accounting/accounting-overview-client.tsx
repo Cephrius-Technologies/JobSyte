@@ -42,6 +42,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ProfitabilityInline } from "@/components/accounting/profitability-card";
+import {
+  getProjectLocationSubtitle,
+  getProjectStreetTitle,
+} from "@/components/projects/project-location";
 import { cn } from "@/lib/utils";
 import type {
   AccountingDateRangePreset,
@@ -53,7 +57,7 @@ import type {
 } from "@/components/accounting/types";
 
 function money(cents: number) {
-  return (cents / 100).toLocaleString(undefined, {
+  return (cents / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -61,7 +65,7 @@ function money(cents: number) {
 }
 
 function compactMoney(cents: number) {
-  return (cents / 100).toLocaleString(undefined, {
+  return (cents / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     notation: "compact",
@@ -74,8 +78,8 @@ function percent(numerator: number, denominator: number) {
   return Math.round((numerator / denominator) * 100);
 }
 
-function startOfToday() {
-  const today = new Date();
+function startOfToday(todayKey: string) {
+  const today = new Date(`${todayKey}T12:00:00`);
   today.setHours(0, 0, 0, 0);
   return today;
 }
@@ -88,10 +92,10 @@ function dateFromValue(value: string | null | undefined) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function getRangeStart(preset: AccountingDateRangePreset) {
+function getRangeStart(preset: AccountingDateRangePreset, todayKey: string) {
   if (preset === "all") return null;
 
-  const today = startOfToday();
+  const today = startOfToday(todayKey);
   const start = new Date(today);
 
   if (preset === "30d") start.setDate(start.getDate() - 29);
@@ -198,11 +202,13 @@ export function AccountingOverviewClient({
   jobs,
   expenses,
   invoices,
+  todayKey,
 }: {
   rows: AccountingOverviewRow[];
   jobs: AccountingOverviewJob[];
   expenses: AccountingOverviewExpense[];
   invoices: AccountingOverviewInvoice[];
+  todayKey: string;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -213,8 +219,8 @@ export function AccountingOverviewClient({
     Number(statusFilter !== "all") +
     Number(dateRange !== "90d");
 
-  const rangeStart = useMemo(() => getRangeStart(dateRange), [dateRange]);
-  const today = useMemo(() => startOfToday(), []);
+  const rangeStart = useMemo(() => getRangeStart(dateRange, todayKey), [dateRange, todayKey]);
+  const today = useMemo(() => startOfToday(todayKey), [todayKey]);
 
   const jobsByProject = useMemo(() => {
     const map = new Map<string, AccountingOverviewJob[]>();
@@ -368,7 +374,8 @@ export function AccountingOverviewClient({
       const matchesStatus = statusFilter === "all" || row.status === statusFilter;
       const matchesQuery =
         q.length === 0 ||
-        row.project_address.toLowerCase().includes(q) ||
+        getProjectStreetTitle(row).toLowerCase().includes(q) ||
+        getProjectLocationSubtitle(row).toLowerCase().includes(q) ||
         (row.builder_name ?? "").toLowerCase().includes(q) ||
         (row.subdivision ?? "").toLowerCase().includes(q);
 
@@ -415,19 +422,19 @@ export function AccountingOverviewClient({
   const trendData = useMemo(() => {
     const projectIds = new Set(filtered.map((row) => row.project_id));
     const chartStart = rangeStart ?? (() => {
-      const start = new Date();
+      const start = new Date(today);
       start.setMonth(start.getMonth() - 11, 1);
       start.setHours(0, 0, 0, 0);
       return start;
     })();
 
     const bucketStart = new Date(chartStart.getFullYear(), chartStart.getMonth(), 1);
-    const end = new Date();
+    const end = new Date(today);
     const months: { label: string; revenue: number; expenses: number; net: number }[] = [];
 
     for (const cursor = new Date(bucketStart); cursor <= end; cursor.setMonth(cursor.getMonth() + 1)) {
       months.push({
-        label: cursor.toLocaleDateString(undefined, { month: "short" }),
+        label: cursor.toLocaleDateString("en-US", { month: "short" }),
         revenue: 0,
         expenses: 0,
         net: 0,
@@ -458,7 +465,7 @@ export function AccountingOverviewClient({
     }
 
     return months;
-  }, [filtered, jobs, expenses, rangeStart]);
+  }, [filtered, jobs, expenses, rangeStart, today]);
 
   const varianceChartData = useMemo(() => {
     return [
@@ -592,7 +599,7 @@ export function AccountingOverviewClient({
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-4 xl:grid-cols-6">
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
             <SummaryCard
               label="Realized Revenue"
               value={money(totals.revenue)}
@@ -766,14 +773,22 @@ export function AccountingOverviewClient({
 
             <InsightCard
               title="Top Performer"
-              project={insights.topPerformer?.project_address}
+              project={
+                insights.topPerformer
+                  ? getProjectStreetTitle(insights.topPerformer)
+                  : undefined
+              }
               value={money(insights.topPerformer?.displayNetProfit ?? 0)}
               tone="success"
               subtitle={insights.topPerformer ? `${insights.topPerformer.marginPct}% margin` : undefined}
             />
             <InsightCard
               title="Highest Spend"
-              project={insights.biggestExpense?.project_address}
+              project={
+                insights.biggestExpense
+                  ? getProjectStreetTitle(insights.biggestExpense)
+                  : undefined
+              }
               value={money(insights.biggestExpense?.total_expenses_cents ?? 0)}
               subtitle={insights.biggestExpense ? `${money(insights.biggestExpense.displayRevenue)} revenue basis` : undefined}
             />
@@ -817,6 +832,7 @@ export function AccountingOverviewClient({
               ) : (
                 filtered.map((row) => {
                   const isEstimate = row.status !== "completed";
+                  const locationSubtitle = getProjectLocationSubtitle(row);
 
                   return (
                     <TableRow
@@ -825,10 +841,17 @@ export function AccountingOverviewClient({
                       onClick={() => router.push(`/accounting/${row.project_id}`)}
                     >
                       <TableCell>
-                        <div className="font-medium leading-tight">{row.project_address}</div>
+                        <div className="font-medium leading-tight">
+                          {getProjectStreetTitle(row)}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {[row.builder_name, row.subdivision].filter(Boolean).join(" • ")}
                         </div>
+                        {locationSubtitle ? (
+                          <div className="text-xs text-muted-foreground">
+                            {locationSubtitle}
+                          </div>
+                        ) : null}
                         <div className="mt-1 md:hidden">{statusBadge(row.status)}</div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">

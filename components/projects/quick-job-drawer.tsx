@@ -18,7 +18,7 @@ import { markProjectJobPaid } from "@/components/projects/actions";
 
 function formatPrice(cents: number | null): string {
   if (cents === null) return "0";
-  return (cents / 100).toLocaleString(undefined, {
+  return (cents / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
   });
@@ -179,7 +179,7 @@ export function QuickJobDrawer({
                   {incompleteJobs.map((job) => (
                     <div
                       key={job.id}
-                      className="flex items-center justify-between gap-2 rounded-md border border-primary/10 bg-primary/2 p-3 text-sm hover:bg-primary/5"
+                      className="flex items-center justify-between gap-2 rounded-md border border-border bg-primary/2 p-3 text-sm hover:bg-muted/50"
                     >
                       <div className="min-w-0 flex-1">
                         {/* Title gets its own row so it isn't squeezed out by the status badges. */}

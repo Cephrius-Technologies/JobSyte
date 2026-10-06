@@ -100,7 +100,7 @@ type EmployeeFilterKey =
   | "on_jobs";
 
 function money(cents: number) {
-  return (cents / 100).toLocaleString(undefined, {
+  return (cents / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -110,7 +110,7 @@ function money(cents: number) {
 
 function formatDate(value: string | null) {
   if (!value) return "No date";
-  return new Date(value).toLocaleDateString(undefined, {
+  return new Date(value).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -131,7 +131,7 @@ function payDisplay(employee: EmployeeProfile) {
   const suffix = employee.pay_type === "salary" ? "/yr" : "/hr";
   const value =
     employee.pay_type === "salary"
-      ? employee.hourly_rate.toLocaleString(undefined, {
+      ? employee.hourly_rate.toLocaleString("en-US", {
           maximumFractionDigits: 0,
         })
       : employee.hourly_rate.toFixed(2);
@@ -160,14 +160,15 @@ export function EmployeesPageClient({
   jobs,
   payments,
   employeePayments,
+  nowIso,
 }: {
   employees: EmployeeProfile[];
   crews: CrewProfile[];
   jobs: WorkforceJob[];
   payments: WorkforcePayment[];
   employeePayments: EmployeePaymentRecord[];
+  nowIso: string;
 }) {
-  const [nowIso] = useState(() => new Date().toISOString());
   const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
   const [crewDialogOpen, setCrewDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] =
@@ -305,7 +306,7 @@ export function EmployeesPageClient({
       {/* Header with actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-primary">Employees &amp; Crews</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Employees &amp; Crews</h1>
           <p className="text-sm text-muted-foreground">
             Manage your workforce — add employees and crews to assign jobs and track payroll.
           </p>
@@ -564,7 +565,7 @@ export function EmployeesPageClient({
       </div>
 
       {/* Two-column grid — left column stacks roster + crews, right column is analytics */}
-      <div className="grid grid-cols-1 gap-4 lg:h-[calc(100vh-26rem)] lg:grid-cols-[3fr_2fr]">
+      <div className="grid grid-cols-1 gap-4 xl:h-[calc(100vh-26rem)] xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {/* Left column: Employee Roster on top, Crew Overview below */}
         <div className="flex min-h-0 flex-col gap-4">
           <Card className="flex shrink-0 flex-col overflow-hidden shadow-none max-h-[55vh]">
@@ -774,7 +775,7 @@ export function EmployeesPageClient({
           </Card>
 
           {/* Crew Overview */}
-          <Card className="flex flex-1 min-h-0 flex-col overflow-hidden shadow-none max-h-[70vh] lg:max-h-none">
+          <Card className="flex flex-1 min-h-0 flex-col overflow-hidden shadow-none max-h-[70vh] xl:max-h-none">
             <div className="shrink-0 border-b p-4">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-3">

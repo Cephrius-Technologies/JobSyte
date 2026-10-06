@@ -2,6 +2,7 @@
 // employees, crews, and payments into the client model consumed by
 // `components/payroll/payroll-page.tsx`.
 import { redirect } from "next/navigation";
+import { format } from "date-fns";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCompanyId } from "@/lib/active-company";
@@ -134,7 +135,11 @@ export default async function PayrollPage() {
   return (
     <div className="space-y-6">
       <BreadcrumbSetter crumbs={[{ label: "Payroll", href: "/payroll" }]} />
-      <PayrollPageClient assignments={assignments} payments={payments} />
+      <PayrollPageClient
+        assignments={assignments}
+        payments={payments}
+        todayKey={format(new Date(), "yyyy-MM-dd")}
+      />
     </div>
   );
 }

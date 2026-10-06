@@ -5,7 +5,20 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveCompanyId } from "@/lib/active-company";
 import { BreadcrumbSetter } from "@/components/app-shell/breadcrumb-setter";
 import { ProjectAccountingClient } from "@/components/accounting/project-accounting-client";
+import {
+  getProjectLocationSubtitle,
+  getProjectStreetTitle,
+} from "@/components/projects/project-location";
 import type { ProjectExpense, ProjectProfitability, ProjectStatus } from "@/components/accounting/types";
+
+function isMissingProjectLocationColumnError(message: string | undefined) {
+  const normalized = (message ?? "").toLowerCase();
+  return (
+    normalized.includes("project_city") ||
+    normalized.includes("project_state") ||
+    (normalized.includes("schema cache") && normalized.includes("projects"))
+  );
+}
 
 export default async function ProjectAccountingPage({
   params,
@@ -24,13 +37,38 @@ export default async function ProjectAccountingPage({
   if (userError || !user) redirect("/login");
   if (!companyId) redirect("/login");
 
-  const { data: project } = await supabase
+  let projectRes = await supabase
     .from("projects")
-    .select("id, project_address, builder_name, subdivision")
+    .select("id, project_address, project_city, project_state, builder_name, subdivision")
     .eq("id", id)
     .eq("company_id", companyId)
     .is("deleted_at", null)
     .maybeSingle();
+
+  if (
+    projectRes.error &&
+    isMissingProjectLocationColumnError(projectRes.error.message)
+  ) {
+    projectRes = await supabase
+      .from("projects")
+      .select("id, project_address, builder_name, subdivision")
+      .eq("id", id)
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .maybeSingle();
+  }
+
+  if (projectRes.error) {
+    return <p className="text-sm text-destructive">{projectRes.error.message}</p>;
+  }
+
+  const project = projectRes.data
+    ? {
+        ...projectRes.data,
+        project_city: "project_city" in projectRes.data ? projectRes.data.project_city : null,
+        project_state: "project_state" in projectRes.data ? projectRes.data.project_state : null,
+      }
+    : null;
 
   if (!project) {
     return <div className="text-sm text-muted-foreground">Project not found.</div>;
@@ -90,6 +128,8 @@ export default async function ProjectAccountingPage({
   const profitability: ProjectProfitability = {
     project_id: project.id,
     project_address: project.project_address,
+    project_city: project.project_city,
+    project_state: project.project_state,
     builder_name: project.builder_name,
     subdivision: project.subdivision,
     status,
@@ -104,13 +144,15 @@ export default async function ProjectAccountingPage({
     est_gross_profit_cents: estimated_revenue_cents - direct_total_cents,
     est_net_profit_cents: estimated_revenue_cents - direct_total_cents - indirect_total_cents,
   };
+  const projectStreetTitle = getProjectStreetTitle(project);
+  const projectLocationSubtitle = getProjectLocationSubtitle(project);
 
   return (
     <div className="space-y-6">
       <BreadcrumbSetter
         crumbs={[
           { label: "Accounting", href: "/accounting" },
-          { label: project.project_address },
+          { label: projectStreetTitle },
         ]}
       />
 
@@ -125,9 +167,10 @@ export default async function ProjectAccountingPage({
               Back to Accounting
             </Link>
           </div>
-          <h1 className="mt-1 text-xl font-semibold">{project.project_address}</h1>
+          <h1 className="mt-1 text-xl font-semibold">{projectStreetTitle}</h1>
           <p className="text-sm text-muted-foreground">
             Builder: {project.builder_name ?? "—"} • Subdivision: {project.subdivision ?? "—"}
+            {projectLocationSubtitle ? ` • Location: ${projectLocationSubtitle}` : ""}
           </p>
         </div>
       </div>

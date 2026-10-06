@@ -21,6 +21,7 @@ import { SettingsSecurityCard } from "@/components/settings/settings-security-ca
 import { SettingsDataSessionCard } from "@/components/settings/settings-data-session-card";
 import { SettingsReleaseNotesCard } from "@/components/settings/settings-release-notes-card";
 import { SettingsProjectPresetsCard } from "@/components/settings/settings-project-presets-card";
+import { SettingsWeatherCard } from "@/components/settings/settings-weather-card";
 import type { ProjectPresetForSettings } from "@/app/(jobsyte-app)/settings/actions";
 
 type SettingsPageClientProps = {
@@ -40,6 +41,7 @@ type SettingsPageClientProps = {
     weeklySummary: boolean;
     productUpdates: boolean;
     defaultDueDays: number;
+    weatherCityName?: string;
   };
   initialProjectPresets: ProjectPresetForSettings[];
 };
@@ -188,17 +190,16 @@ export function SettingsPageClient({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4 pb-6">
       <div>
-        <h1 className="text-2xl font-semibold text-primary">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground">
           Manage your account, business profile, preferences, and security.
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
         <SettingsAccountDetailsCard account={account} />
-
         <SettingsAppearanceCard />
       </div>
 
@@ -206,44 +207,48 @@ export function SettingsPageClient({
         <SettingsReleaseNotesCard />
       </div>
 
-      <SettingsBusinessProfileCard
-        companyName={companyName}
-        setCompanyName={setCompanyName}
-        phone={phone}
-        setPhone={setPhone}
-        address={address}
-        setAddress={setAddress}
-        savingProfile={savingProfile}
-        onSaveProfile={onSaveProfile}
-      />
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+        <SettingsBusinessProfileCard
+          companyName={companyName}
+          setCompanyName={setCompanyName}
+          phone={phone}
+          setPhone={setPhone}
+          address={address}
+          setAddress={setAddress}
+          savingProfile={savingProfile}
+          onSaveProfile={onSaveProfile}
+        />
+        <SettingsWeatherCard initialCityName={initialPreferences.weatherCityName} />
+      </div>
 
-      <SettingsPreferencesCard
-        emailInvoiceReminders={emailInvoiceReminders}
-        setEmailInvoiceReminders={setEmailInvoiceReminders}
-        weeklySummary={weeklySummary}
-        setWeeklySummary={setWeeklySummary}
-        productUpdates={productUpdates}
-        setProductUpdates={setProductUpdates}
-        defaultDueDays={defaultDueDays}
-        setDefaultDueDays={setDefaultDueDays}
-        savingPreferences={savingPreferences}
-        onSavePreferences={onSavePreferences}
-      />
+      <div className="grid min-w-0 gap-4 2xl:grid-cols-2">
+        <SettingsPreferencesCard
+          emailInvoiceReminders={emailInvoiceReminders}
+          setEmailInvoiceReminders={setEmailInvoiceReminders}
+          weeklySummary={weeklySummary}
+          setWeeklySummary={setWeeklySummary}
+          productUpdates={productUpdates}
+          setProductUpdates={setProductUpdates}
+          defaultDueDays={defaultDueDays}
+          setDefaultDueDays={setDefaultDueDays}
+          savingPreferences={savingPreferences}
+          onSavePreferences={onSavePreferences}
+        />
+        <SettingsSecurityCard
+          newEmail={newEmail}
+          setNewEmail={setNewEmail}
+          savingEmail={savingEmail}
+          onUpdateEmail={onUpdateEmail}
+          nextPassword={nextPassword}
+          setNextPassword={setNextPassword}
+          confirmPassword={confirmPassword}
+          setConfirmPassword={setConfirmPassword}
+          savingPassword={savingPassword}
+          onUpdatePassword={onUpdatePassword}
+        />
+      </div>
 
       <SettingsProjectPresetsCard initialPresets={initialProjectPresets} />
-
-      <SettingsSecurityCard
-        newEmail={newEmail}
-        setNewEmail={setNewEmail}
-        savingEmail={savingEmail}
-        onUpdateEmail={onUpdateEmail}
-        nextPassword={nextPassword}
-        setNextPassword={setNextPassword}
-        confirmPassword={confirmPassword}
-        setConfirmPassword={setConfirmPassword}
-        savingPassword={savingPassword}
-        onUpdatePassword={onUpdatePassword}
-      />
 
       <SettingsDataSessionCard
         signingOutAll={signingOutAll}
