@@ -38,6 +38,10 @@ create policy "Members can read their note notifications"
       where member.company_id = note_notifications.company_id
         and member.user_id = (select auth.uid())
     )
+    and exists (
+      select 1 from public.project_notes note
+      where note.id = note_notifications.note_id
+    )
   );
 
 create policy "Members can mark their note notifications read"
